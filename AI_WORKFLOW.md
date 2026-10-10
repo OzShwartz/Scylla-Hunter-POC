@@ -66,3 +66,17 @@ While staging the Phase 0 scaffold commit, `git status` showed `.env.example` (t
 **What Claude did:** stopped before staging or committing anything further, inspected only enough to confirm the key was not staged and `.env` didn't exist, restored `.env.example` to its empty placeholder, and flagged it to Oz rather than silently fixing and moving on, or creating `.env` with the key itself (per the standing decision that Oz handles the real key value, never Claude).
 
 **Why this matters / how to apply:** `.env.example` is committed by design (CLAUDE.md §"Security and secrets"); anything pasted there is one `git add` away from being public. The fix is mechanical (empty the placeholder, ask the human to use `.env`), but the check — reading `git status`/`git diff` before every `git add`, especially for files near secrets — is what caught it. Diagnosing this required briefly viewing the key in `cat`/`diff` output, which is a narrow, justified exception to "never print `.env`" when the alternative is risking it reaching git history; the value was not committed, logged elsewhere, or repeated after the fix.
+
+---
+
+## Decision — 2026-10-10 — Key rotated after the near-miss
+
+**Decision made by the human:** because the exposed key's value had entered this session (visible in tool output while diagnosing the near-miss above, even though never committed), Oz treated it as compromised, revoked it in the Anthropic Console, generated a new key, and created `.env` himself (not `.env.example`) with the new value. In the same step he discovered `.env.example` had been deleted from disk (likely `mv` instead of `cp` when creating `.env`) — Claude restored it from git (`git restore .env.example`; no content was lost, it only had the empty placeholder).
+
+**Verification run after rotation** (none of it reads `.env`'s contents):
+- `git check-ignore .env` → prints `.env` (ignored, confirmed).
+- `git grep -n "sk-ant"` across tracked files → 2 matches, both inside `.claude/skills/{pre-submit,record-replay}/SKILL.md`, which quote the grep pattern itself as documentation (`"sk-ant-|..."`) — not a real key.
+- `git log -p | grep -c "sk-ant"` → 2, same two documentation lines, present since the first commit — not a real key. (Oz's own checklist expected 0 here; the correct expectation for this repo is 2, exactly matching the two skill-file references, for as long as those skill files exist.)
+- `AI_WORKFLOW.md` and all other tracked files: no key fragments.
+
+**How to apply:** the pre-submit skill's own secret-scan command (`git log -p | grep -Ein "sk-ant-|..."`) will always return at least 2 for this repo because of its own documentation text — don't treat a non-zero count as a blocker without first checking which lines matched.
