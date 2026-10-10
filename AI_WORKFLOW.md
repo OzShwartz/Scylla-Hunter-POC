@@ -23,4 +23,36 @@ Format per entry: prompt summary → what Claude did → corrections (if any) �
 
 **Corrections:** none yet — first turn.
 
-**Decisions made by the human:** pending (see the plan message for the list of decisions requested).
+**Decisions made by the human:**
+- Champion_move confidence: inherit from the source signal that named the person (confirmed the recommended option), plus split PRD §9.2 into separate weights/confidence tables and state the inheritance rule explicitly in FR-5, so the ambiguity can't recur.
+- ANTHROPIC_API_KEY: Oz will add it to `.env` himself when told the right moment; never to be pasted into chat or read by the agent.
+- GitHub live source (FR-2): build it.
+- Remote GitHub repo: local only for now; no push yet.
+
+---
+
+## Entry #2 — 2026-10-10 — Plan review: reordering and process corrections
+
+**Prompt (summarized):** Oz reviewed the first draft build plan (presented via plan mode / ExitPlanMode) and rejected it with four structural corrections plus two process rules, before approving a revised version:
+1. Build the full 6-table SQLite schema in Phase 1, not incrementally in Phase 4 — no schema migrations mid-build.
+2. Move the HITL CLI (`review`/`approve`/`reject`/`edit`) from after the SHOULD items to right after personalization (now Phase 3) — otherwise 3 of 5 qualified leads stay stuck in `PENDING_APPROVAL` and the trigger-engine phase has nothing to exercise for them.
+3. Build `evaluate.py` for extraction + selection in Phase 1 (needed while iterating on the extraction prompt, not after the README), extend it with grounding in Phase 2.
+4. Write `README.md` once, at the end, after the full MUST + HITL flow works — rename the old "README + examples" phase to "examples + replay finalization," with the README drafted last.
+Plus: end every phase with its own git commit (`"Phase N: <what>"`) and stop for explicit OK before the next phase; tell Oz the exact moment to add the API key to `.env` rather than assuming; log this feedback in `AI_WORKFLOW.md` as a human decision.
+
+**What Claude did:**
+- This was a **correction**, not a confirmation: the first draft plan had sequenced the DB schema, HITL CLI and eval scorecard later than they needed to be, which Oz caught would have left the trigger-engine phase unable to actually exercise 3 of the 5 qualified leads (they'd be stuck pending approval with no CLI to clear them). The agent had reasoned itself into a literal reading of PRD §15's MUST-then-SHOULD ordering without noticing this downstream blocker.
+- Rewrote the plan file (`/Users/oz/.claude/plans/piped-sniffing-rain.md`) incorporating all four structural changes, renumbered the phases accordingly (new Phase 3 = HITL CLI, old Phase 3 trigger engine → Phase 4, etc.), added the explicit "stop and wait for OK after every phase" process rule, and added a mid-Phase-1 checkpoint instruction to flag the API-key moment explicitly rather than assuming timing.
+- Noted that moving HITL earlier also resolves a tension flagged in the first draft (the §16.1 quickstart needs `review`/`approve` to exist before it can be demonstrated, which conflicted with README being a MUST-phase item preceding the HITL SHOULD-phase item in the original literal ordering).
+- Re-exited plan mode with the revised plan; Oz approved it.
+
+**Corrections (the agent's mistake and the fix):**
+- **Mistake:** followed PRD §15's MUST/SHOULD/COULD *priority* labels as if they were also the required *build sequence* within MUST items, without checking whether an earlier MUST phase would be left unexercisable by a later one. Priority order and dependency order are not automatically the same thing.
+- **Fix:** sequence by dependency — build whatever a later phase needs to be fully exercised (full schema, HITL CLI to clear pending drafts, eval scorecard to iterate against) as early as the thing that needs it, regardless of MUST/SHOULD label, then document the reasoning in the plan so it's auditable.
+
+**Decisions made by the human:**
+- Full 6-table schema built in Phase 1, not incrementally.
+- HITL CLI moved to Phase 3 (right after personalization), ahead of the trigger engine.
+- `evaluate.py` (extraction + selection) built in Phase 1; grounding check added in Phase 2. No separate later "add eval" phase.
+- `README.md` drafted once at the end (Phase 6), after the full MUST + HITL flow is working, not alongside the MUST-only cut.
+- Process: every phase ends in its own commit and an explicit stop for approval before the next phase begins.

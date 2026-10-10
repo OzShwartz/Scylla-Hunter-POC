@@ -299,17 +299,27 @@ decay           = 0.5 ^ (age_months / 18)                 # half-life 18 months
 signal_value    = weight[type] × decay × confidence_factor
 ```
 
-| Signal type | Weight | | Confidence | Factor |
-|---|---|---|---|---|
-| customer_reference | 40 | | high | 1.0 |
-| conference_talk | 35 | | medium | 0.8 |
-| champion_move | 35 | | low | 0.5 |
-| job_post | 30 | | | |
-| github_code | 25 | | | |
-| tech_stack | 20 | | | |
-| review | 20 | | | |
+**Signal weights**
 
-Confidence comes from the LLM extraction step and is checked by code (§11.4).
+| Signal type | Weight |
+|---|---|
+| customer_reference | 40 |
+| conference_talk | 35 |
+| champion_move | 35 |
+| job_post | 30 |
+| github_code | 25 |
+| tech_stack | 20 |
+| review | 20 |
+
+**Confidence factors**
+
+| Confidence | Factor |
+|---|---|
+| high | 1.0 |
+| medium | 0.8 |
+| low | 0.5 |
+
+For an extracted signal, confidence comes from the LLM extraction step and is checked by code (§11.4). A **derived `champion_move` signal is not extracted, so it has no confidence of its own** — it **inherits the confidence of the source signal that originally named the person** (see FR-5). In the worked example (§9.4), Dana Weiss is named with `confidence: high` in Northwind's customer-reference signal (s01), so her champion_move signal at Brightwave also carries `confidence: high`, giving a value of 30.9, not 17.5 or 15.45.
 
 ### 9.3 Account score
 
@@ -389,8 +399,8 @@ Each requirement has acceptance criteria (AC) that the tests or the demo verify.
 **FR-4 People lookup.** For fixture accounts, people come from fixtures. For every qualified account, the system also generates the exact people-API request it would send (persona titles, company domain) and stores it in the run log.
 - AC: the generated query is printed in dry-run and stored.
 
-**FR-5 Champion detection.** If a person's `previous_companies` includes an account where a signal names them, create a `champion_move` signal on their current account.
-- AC: Brightwave receives a champion_move signal linked to Dana Weiss.
+**FR-5 Champion detection.** If a person's `previous_companies` includes an account where a signal names them, create a `champion_move` signal on their current account. The new signal's `published_at` is the person's `left_at` date (when they joined the current company), and its `confidence` is inherited from the source signal that named them — a champion_move signal is derived, not extracted, so it has no confidence of its own (§9.2).
+- AC: Brightwave receives a champion_move signal linked to Dana Weiss, dated 2026-07-01, with `confidence: high` inherited from s01.
 
 ### Qualification and selection
 
