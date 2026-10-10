@@ -134,11 +134,12 @@ def review() -> None:
     for m in pending:
         lead = db.get_lead(conn, m["lead_id"])
         account = db.get_account(conn, lead["account_id"])
-        reason = hitl.explain_route(conn, m, account, config)
+        _, _, reason, code = hitl.route_info(conn, m, account, config)
+        sensitive_tag = "  [SENSITIVE CONTENT - excluded from `approve --all`]" if code == hitl.SENSITIVE_CONTENT else ""
         typer.echo(
             f"\nmsg#{m['id']} | {m['channel']}/{m['variant']} | "
             f"lead={lead['id']} {lead['first_name']} {lead['last_name']} ({lead['persona']}) @ "
-            f"{account['name']} (score {account['account_score']})"
+            f"{account['name']} (score {account['account_score']}){sensitive_tag}"
         )
         typer.echo(f"  reason: {reason}")
         if m["subject"]:
@@ -164,16 +165,29 @@ def review() -> None:
 @app.command()
 def approve(
     message_id: int = typer.Argument(None),
-    approve_all: bool = typer.Option(False, "--all", help="Approve every pending draft"),
+    approve_all: bool = typer.Option(False, "--all", help="Approve every score-band pending draft"),
+    include_sensitive: bool = typer.Option(
+        False, "--include-sensitive",
+        help="With --all, also approve content-sensitive drafts (competitor/IBM/renewal mentions)",
+    ),
 ) -> None:
-    """FR-7: approve one pending draft, or every pending draft with --all."""
+    """FR-7: approve one pending draft, or every pending draft with --all.
+
+    --all only bulk-approves drafts pending on account score alone. A draft
+    forced to review for a content reason (sensitive content, a validator
+    failure, no high-confidence evidence) or by approval_mode=all is skipped -
+    run `hunter review` to see why, then approve it individually, or pass
+    --include-sensitive to also sweep up the sensitive-content ones.
+    """
     config = load_config()
     conn = db.connect(config.runtime.db_path)
     if approve_all:
-        ids = [m["id"] for m in hitl.list_pending(conn)]
-        for mid in ids:
-            hitl.approve(conn, mid, now=datetime.now())
-        typer.echo(f"Approved {len(ids)} draft(s).")
+        approved_ids, skipped = hitl.approve_all(
+            conn, config, include_sensitive=include_sensitive, now=datetime.now()
+        )
+        typer.echo(f"Approved {len(approved_ids)} draft(s).")
+        for message, reason in skipped:
+            typer.echo(f"  Skipped msg#{message['id']}: {reason} - approve individually with `hunter approve {message['id']}`")
         conn.close()
         return
     if message_id is None:

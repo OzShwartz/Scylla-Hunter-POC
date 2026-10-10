@@ -58,6 +58,19 @@ def _pending_message_for(conn, lead_id: str):
     raise AssertionError(f"no pending message for lead {lead_id}")
 
 
+def _insert_pending_message(conn, *, lead_id: str, body: str, evidence_ids: list[str] | None = None) -> int:
+    """A synthetic PENDING_APPROVAL draft, standing in for a future email (R2/R3
+    aren't built until Phase 4) so --all's content-sensitivity skip can be tested
+    without the trigger engine.
+    """
+    return db.insert_message(
+        conn, lead_id=lead_id, run_id=None, channel="email", variant="cold",
+        subject=None, body=body, evidence_ids=evidence_ids or [], value_prop_ids=[],
+        approval_route="human", status="PENDING_APPROVAL", prompt_version="test", model="test",
+        tokens=0, created_at=datetime.now(),
+    )
+
+
 def test_review_lists_exactly_the_three_score_banded_pending_invites(hitl_conn):
     pending = hitl.list_pending(hitl_conn)
     assert {m["lead_id"] for m in pending} == PENDING_LEAD_IDS
@@ -178,3 +191,78 @@ def test_edit_writes_a_message_edited_event(hitl_conn, config):
 def test_edit_unknown_message_id_raises(hitl_conn, config):
     with pytest.raises(ValueError, match="No message"):
         hitl.edit(hitl_conn, 999999, text="hello", config=config, now=datetime.now())
+
+
+# ---------------------------------------------------------------------------
+# approve --all must not bulk-approve content-sensitive drafts (PRD §9.6):
+# that would defeat the override routing was built for.
+# ---------------------------------------------------------------------------
+
+
+SENSITIVE_BODY = (
+    "Hi Joris, your team's DataStax Enterprise contract renewal is worth "
+    "revisiting given the IBM acquisition."
+)
+
+
+def test_route_info_flags_sensitive_content(hitl_conn, config):
+    sensitive_id = _insert_pending_message(hitl_conn, lead_id="p05", body=SENSITIVE_BODY)
+    message = db.get_message(hitl_conn, sensitive_id)
+    account = db.get_account(hitl_conn, "a02")
+
+    _, status, _, code = hitl.route_info(hitl_conn, message, account, config)
+
+    assert status == "PENDING_APPROVAL"
+    assert code == hitl.SENSITIVE_CONTENT
+
+
+def test_approve_all_skips_sensitive_content_by_default(hitl_conn, config):
+    sensitive_id = _insert_pending_message(hitl_conn, lead_id="p05", body=SENSITIVE_BODY)
+
+    approved_ids, skipped = hitl.approve_all(hitl_conn, config, now=datetime.now())
+
+    assert sensitive_id not in approved_ids
+    assert db.get_message(hitl_conn, sensitive_id)["status"] == "PENDING_APPROVAL"
+    skipped_ids = {m["id"] for m, _ in skipped}
+    assert sensitive_id in skipped_ids
+    # the three score-band invites (Joris, Lior, Dana) are still bulk-approved
+    assert len(approved_ids) == 3
+    assert hitl.list_pending(hitl_conn) == [db.get_message(hitl_conn, sensitive_id)]
+
+
+def test_approve_all_include_sensitive_approves_it_too(hitl_conn, config):
+    sensitive_id = _insert_pending_message(hitl_conn, lead_id="p05", body=SENSITIVE_BODY)
+
+    approved_ids, skipped = hitl.approve_all(hitl_conn, config, include_sensitive=True, now=datetime.now())
+
+    assert sensitive_id in approved_ids
+    assert db.get_message(hitl_conn, sensitive_id)["status"] == "APPROVED"
+    assert skipped == []
+
+
+def test_approve_all_never_sweeps_up_a_validator_failed_draft_even_with_include_sensitive(hitl_conn, config):
+    failed_id = _insert_pending_message(hitl_conn, lead_id="p05", body="x" * 500)
+    db.update_message_status(hitl_conn, failed_id, status="PENDING_APPROVAL", reviewer_note="too long")
+
+    approved_ids, skipped = hitl.approve_all(hitl_conn, config, include_sensitive=True, now=datetime.now())
+
+    assert failed_id not in approved_ids
+    assert db.get_message(hitl_conn, failed_id)["status"] == "PENDING_APPROVAL"
+    skipped_ids = {m["id"] for m, _ in skipped}
+    assert failed_id in skipped_ids
+
+
+def test_approve_all_never_sweeps_up_a_no_high_confidence_evidence_draft(hitl_conn, config):
+    low_conf_id = _insert_pending_message(
+        hitl_conn, lead_id="p05", body="Hi Joris, following up - open to a quick chat about Lumen Logistics?",
+    )
+
+    approved_ids, skipped = hitl.approve_all(hitl_conn, config, include_sensitive=True, now=datetime.now())
+
+    assert low_conf_id not in approved_ids
+    skipped_ids = {m["id"] for m, _ in skipped}
+    assert low_conf_id in skipped_ids
+    _, _, _, code = hitl.route_info(
+        hitl_conn, db.get_message(hitl_conn, low_conf_id), db.get_account(hitl_conn, "a02"), config
+    )
+    assert code == hitl.NO_HIGH_CONFIDENCE_EVIDENCE

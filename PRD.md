@@ -415,8 +415,9 @@ Each requirement has acceptance criteria (AC) that the tests or the demo verify.
 **FR-6 Draft messages (LLM).** For each qualified lead, draft a LinkedIn invite (rule R1); when a trigger fires, draft a warm or cold email (R2 and R3). Output is structured and validated (§11.5). On failure, retry once; if it still fails, route to human review with the failure reason.
 - AC: every saved message has `evidence_ids`, `prompt_version` and `model`.
 
-**FR-7 Approval workflow (HITL).** Route each draft per §9.6. `review` lists pending drafts with their evidence. `approve`, `reject --reason` and `edit` change its status; edits keep the original text.
+**FR-7 Approval workflow (HITL).** Route each draft per §9.6. `review` lists pending drafts with their evidence, the routing reason, and a `[SENSITIVE CONTENT]` tag for drafts forced to review by the §9.6 content override. `approve`, `reject --reason` and `edit` change its status; edits keep the original text. `approve --all` only bulk-approves drafts pending on account score alone - a content-sensitive draft, a validator failure, or no high-confidence evidence each need an individual decision, since bulk-approving past the §9.6 override would defeat the reason it exists. `--all --include-sensitive` also sweeps up the sensitive-content ones (never the validator-failure or no-high-confidence-evidence ones).
 - AC: with `approval_mode = all`, nothing is dispatched until approved.
+- AC: `approve --all` on a queue containing a sensitive-content draft approves only the others and reports the sensitive one as skipped, with its message id for individual approval.
 
 ### Triggers and dispatch
 
@@ -620,12 +621,12 @@ The rule logic is identical in all three. Only the source of events and time cha
    - 5 leads qualified;
    - Maya and Tom (Northwind) are auto-approved and their invites "sent" (invites never name a competitor product, so the sensitive-content override in §9.6 never applies to them);
    - Joris, Lior and Dana are pending approval (score-based).
-2. `hunter review`, then approve, edit one, approve the rest. Their invites are "sent".
+2. `hunter review`, then edit one, `hunter approve --all` for the rest. All three (Joris, Lior, Dana) are pending on score alone - a LinkedIn invite never carries the §9.6 content override (`validate_no_competitor_mention_in_invite` forbids it outright), so `--all` needs no `--include-sensitive` here. Their invites are "sent".
 3. `hunter simulate --days 7`:
    - Maya accepts on day 2 → warm email. **Likely pending approval despite the 96 score**: Northwind's only evidence is Astra DB usage, and a grounded warm email will almost certainly name it, triggering the §9.6 sensitive-content override. Not yet confirmed against a real run - Phase 4 will confirm when `simulate` is built.
    - Lior accepts on day 4 → warm email, pending approval (score-based, 78 < 80; confirmed by manual sample - his evidence is self-managed Apache Cassandra, not a DataStax/IBM product, so the override does not apply here).
    - Tom, Joris and Dana do not accept → cold emails on day 7. **Tom's is now pending approval, not auto-approved as earlier assumed** - confirmed by manual sample: his cold email names Astra DB, forcing review despite Northwind's 96 score. This was the routing gap found in review (§9.6). Joris's (DSE) and Dana's (Astra DB, champion move) were already pending on score alone and will likely also now be forced by content.
-4. `hunter review`, then approve the pending emails.
+4. `hunter review` shows Tom's cold email tagged `[SENSITIVE CONTENT]`. `hunter approve --all` approves Lior's, Joris's and Dana's emails (score-band) but reports Tom's as skipped, by design - his is the most commercially sensitive of the batch (it names Astra DB and implies the IBM/DataStax acquisition) and gets an individual read before `hunter approve <msg_id>`, not a blanket sweep.
 5. `hunter report`: the funnel shows 5 invited, 2 accepted, 5 emailed (2 warm, 3 cold).
 
 ---
@@ -995,8 +996,8 @@ flowchart LR
 | Command | What it does |
 |---|---|
 | `hunter run [--llm replay\|live] [--source fixtures\|github\|all]` | Full pipeline up to dispatch of approved invites |
-| `hunter review` | List drafts pending approval, with evidence |
-| `hunter approve <msg_id> \| --all` · `hunter reject <msg_id> --reason ".."` · `hunter edit <msg_id> --text ".."` | HITL decisions |
+| `hunter review` | List drafts pending approval, with evidence, routing reason, and a `[SENSITIVE CONTENT]` tag where it applies |
+| `hunter approve <msg_id> \| --all [--include-sensitive]` · `hunter reject <msg_id> --reason ".."` · `hunter edit <msg_id> --text ".."` | HITL decisions. `--all` only bulk-approves score-band drafts; sensitive-content, validator-failure and no-high-confidence-evidence drafts always need an individual `approve <msg_id>` (or `--include-sensitive` for the sensitive-content ones only) |
 | `hunter event connection-accepted --lead <id>` | Inject an external event |
 | `hunter simulate --days N` | Advance the clock; replay scripted events; apply time rules |
 | `hunter report [--html]` | Write the report |
@@ -1011,9 +1012,10 @@ pip install -r requirements.txt
 python -m hunter reset
 python -m hunter run                 # 5 qualified; 2 auto-sent, 3 pending
 python -m hunter review              # see pending drafts with evidence
-python -m hunter approve --all
+python -m hunter approve --all       # Joris, Lior, Dana - all pending on score alone
 python -m hunter simulate --days 7   # accepts on day 2 and 4; cold emails on day 7
-python -m hunter approve --all
+python -m hunter approve --all       # score-band emails; skips Tom's cold email (names Astra DB)
+python -m hunter approve <msg_id>    # read it in `hunter review`, then approve Tom's individually
 python -m hunter report --html
 ```
 

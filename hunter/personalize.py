@@ -152,7 +152,7 @@ def draft_message(
     has_high_confidence_evidence = any(
         row["id"] in draft.evidence_ids and row["confidence"] == "high" for row in evidence_signals
     )
-    approval_route, status, route_reason = hitl.determine_route(
+    approval_route, status, route_reason, _route_code = hitl.determine_route(
         account_score=account["account_score"],
         validators_passed=not errors,
         has_high_confidence_evidence=has_high_confidence_evidence,
