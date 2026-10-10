@@ -1,7 +1,7 @@
 {
   "text": "{\"uses_competitor\": false, \"uses_cassandra\": false, \"product\": null, \"use_case\": null, \"why_now\": null, \"confidence\": \"high\", \"evidence_quote\": null, \"named_people\": [{\"name\": \"Cassandra Lee\", \"role\": \"Head of Data\"}]}",
-  "tokens_in": 2004,
+  "tokens_in": 2009,
   "tokens_out": 94,
   "model": "claude-haiku-5-5",
-  "prompt_version": "extract_signals.v3"
+  "prompt_version": "extract_signals.v4"
 }

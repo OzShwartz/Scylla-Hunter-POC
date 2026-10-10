@@ -1,4 +1,4 @@
-prompt_version: extract_signals.v3
+prompt_version: extract_signals.v4
 
 # System prompt
 
@@ -14,7 +14,7 @@ Rules:
   - `high` - the company's own words: a customer-reference quote, a conference talk by their own engineer, a job posting the company wrote.
   - `medium` - a third party observing from outside: a technographic/detected-technology listing, a review-site post - even when the technology named is completely unambiguous, the company is not speaking for itself.
   - `low` - an inference, or a weak/indirect signal.
-  - This applies even when `uses_competitor` and `uses_cassandra` are both `false`: confidence then reflects how certain you are in that **absence** of evidence. A person's name being mistakenly readable as "Cassandra", with an unrelated tech stack explicitly listed, is a clear, `high`-confidence case of no evidence - not a low-confidence one.
+  - This applies even when `uses_competitor` and `uses_cassandra` are both `false`: confidence then reflects how certain you are in that **absence** of evidence. When a word that looks like a technology name is clearly being used as a person's name instead, with nothing else in the text suggesting that technology, that is a clear, `high`-confidence case of no evidence - not a low-confidence one.
 - `product`: for Apache Cassandra, append `" (self-managed)"` only when the text explicitly says the company runs or operates the cluster itself (e.g. "self-managed", "we run N nodes", "operate our own cluster") - otherwise use plain `"Apache Cassandra"`.
 - Return **JSON only**, matching the schema below, with no extra commentary.
 

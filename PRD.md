@@ -467,10 +467,11 @@ Each requirement has acceptance criteria (AC) that the tests or the demo verify.
 
 | Lever | Implementation |
 |---|---|
-| Model tiering | Extraction → `claude-haiku-5-5`. Customer-facing writing → `claude-opus-5-5`. Both are set in config. |
+| Model tiering | Extraction → `claude-haiku-5-5`. Customer-facing writing → `claude-opus-5-5`. Both are set in config and confirmed from the recorded replay files. |
+| Reasoning effort | This model family has no `temperature` parameter; sampling is tuned via `output_config.effort` instead (`config.yaml` → `llm.effort`), and part of `max_tokens` is spent on hidden reasoning unless effort is constrained. Extraction uses `effort: low` (a simple classification task, and low effort avoids reasoning tokens crowding out the actual answer within a small `max_tokens` budget). Personalization uses `effort: medium`, leaving room for better customer-facing writing. |
 | LLM only where needed | Only qualified leads reach personalization; suppressed and rejected leads cost nothing. |
 | Replay cache | Each response is keyed by `hash(prompt_version, model, rendered input)` and stored in `data/llm_replay/`. A re-run with an unchanged input makes no call. |
-| Output caps | `max_tokens` per task. Short JSON outputs. |
+| Output caps | `max_tokens` per task. Short JSON outputs via the API's native structured-output support (`output_config.format`, a JSON Schema from the Pydantic model) - stronger than prompt instructions alone, and avoids markdown-fenced or truncated responses. |
 | Prompt caching (production) | Static system prompt and value props form the cacheable prefix, where long enough to qualify. |
 | Batch API (production) | Extraction is not time-sensitive and can run as asynchronous batches at lower cost. |
 | Spend guard | Dedicated Console workspace with a spend limit (§17.1). |

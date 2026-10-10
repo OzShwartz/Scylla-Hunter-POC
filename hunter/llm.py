@@ -80,7 +80,6 @@ def call_llm(
     user: str,
     model: str,
     max_tokens: int,
-    temperature: float,
     prompt_version: str,
     replay_dir: str | Path = "data/llm_replay",
     output_schema: dict | None = None,
@@ -119,8 +118,8 @@ def call_llm(
                 "ANTHROPIC_API_KEY is not set. Add it to .env (see .env.example), "
                 "then re-run with --llm live."
             )
-        # `temperature` (config.yaml llm.temperature) isn't passed: the installed anthropic
-        # SDK for this model family dropped it from messages.create() in favor of `effort`.
+        # This model family has no temperature param on messages.create() - effort (below)
+        # is what this SDK uses instead.
         create_kwargs: dict = dict(
             model=model,
             max_tokens=max_tokens,

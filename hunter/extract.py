@@ -71,7 +71,6 @@ def extract_signals(
             user=user_message,
             model=config.llm.models.extraction,
             max_tokens=config.llm.max_tokens.extraction,
-            temperature=config.llm.temperature,
             prompt_version=spec.version,
             replay_dir=config.llm.replay_dir,
             output_schema=ExtractionResult.model_json_schema(),

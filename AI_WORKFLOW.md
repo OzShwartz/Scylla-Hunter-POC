@@ -103,3 +103,20 @@ While staging the Phase 0 scaffold commit, `git status` showed `.env.example` (t
 **End state:** `hunter eval` → extraction 32/32 (100%), false-positive (s08) rejected correctly, selection 13/13 (100%), VERDICT: PASS. Account scores match PRD §9.4 exactly (96, 76, 78, 61, 23). Replay mode proven deterministic and keyless (`env -u ANTHROPIC_API_KEY`). Secret scan on `data/llm_replay/` clean (model output + token usage only). `pytest -q` → 12/12 passed.
 
 **Decisions made by the human:** none required mid-phase; all of the above were engineering/technical corrections within the approved plan, not product or scope decisions.
+
+---
+
+## Entry #4 — 2026-10-10 — Post-Phase-1 review: overfitting check and PRD/config sync
+
+**Prompt (summarized):** before Phase 2, Oz asked for (1) an overfitting check on `prompts/extract_signals.md` - confirm no fixture-specific content (company/person names, or rules written for one case), generalize anything found, re-record and re-run eval, and report honestly whether 100% still holds; (2) `config.yaml`'s dead `temperature` field replaced by the `effort` setting actually used, PRD §11.2 updated to match (including which model actually ran extraction), and the SDK finding confirmed logged here.
+
+**What Claude did:**
+- Read the full prompt line by line. Two lines reference "Cassandra" as a person's name (§ domain-appropriate: Apache Cassandra genuinely is named after a person, so handling that ambiguity is inherent to the task, not a fixture artifact - matches Oz's own example "a person's name is not a technology"). One line was a real miss: the confidence guidance said a name/tech collision is high-confidence absence-of-evidence "with an unrelated tech stack explicitly listed" - that qualifier describes the exact shape of one fixture's text (a job post with a literal "Stack: ..." list) rather than the general principle. Generalized it to "when a word that looks like a technology name is clearly being used as a person's name instead, with nothing else in the text suggesting that technology" - no reference to any particular text shape.
+- Bumped to `extract_signals.v4`, deleted the stale replay files, re-recorded all 10 calls live, and re-ran `hunter eval`.
+- Removed `temperature` entirely (not just stopped using it) from `config.yaml`, `hunter/models.py`'s `LLMConfig`, and the `llm.py`/`extract.py` call sites, since it was fully dead code once already documented as unused - keeping an unused parameter around once there's no ambiguity left to flag would just be clutter.
+- Updated PRD §11.2 with two additions: a "Reasoning effort" row explaining the no-`temperature`/hidden-thinking-tokens finding and the `effort: low`/`medium` split, and a note on the "Output caps" row about using native structured output instead of prompt-only JSON. Confirmed in the same edit that extraction really did run on `claude-haiku-5-5` (visible in the replay files' `model` field), matching what §11.2 already claimed.
+- The SDK finding (temperature removal, hidden thinking tokens, structured output) was already logged in entry #3; no new entry needed for that part, just this review round.
+
+**Result (reported honestly, as asked):** extraction accuracy is still **32/32 (100%)** after generalizing the prompt, selection still 13/13, false-positive still rejected correctly, all 5 scored accounts still match PRD §9.4 exactly, replay still deterministic and keyless, replay files still secret-scan clean, `pytest -q` still 12/12. The generalization did not cost any accuracy on this fixture set.
+
+**Decisions made by the human:** run an overfitting check before every phase that touches a prompt, not just once at the end; keep config.yaml's technical LLM knobs (not just business weights) free of dead/inaccurate fields; keep PRD §11.2 as a living record of what actually ran, not just the original plan.

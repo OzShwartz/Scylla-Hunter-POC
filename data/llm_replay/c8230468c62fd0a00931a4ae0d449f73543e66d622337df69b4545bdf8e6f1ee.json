@@ -1,7 +1,7 @@
 {
   "text": "{\"uses_competitor\": true, \"uses_cassandra\": true, \"product\": \"DataStax Enterprise\", \"use_case\": \"Shipment-tracking service writing 2B events/day\", \"why_now\": \"Evaluating options to modernise the cluster and reduce operational toil\", \"confidence\": \"high\", \"evidence_quote\": \"Our shipment-tracking service writes 2B events/day to DataStax Enterprise 6.8.\", \"named_people\": []}",
-  "tokens_in": 2029,
+  "tokens_in": 2034,
   "tokens_out": 149,
   "model": "claude-haiku-5-5",
-  "prompt_version": "extract_signals.v3"
+  "prompt_version": "extract_signals.v4"
 }

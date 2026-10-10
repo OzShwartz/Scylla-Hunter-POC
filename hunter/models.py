@@ -68,7 +68,6 @@ class LLMConfig(BaseModel):
     max_tokens: LLMMaxTokensConfig
     effort: LLMEffortConfig
     max_retries_on_validation_fail: int
-    temperature: float
 
 
 class EmployeeBand(BaseModel):

@@ -1,0 +1,7 @@
+{
+  "text": "{\"uses_competitor\": true, \"uses_cassandra\": true, \"product\": \"Astra DB\", \"use_case\": \"Own the Astra DB and Kafka estate, lead capacity planning, and evaluate cost and latency improvements for the multi-region data layer\", \"why_now\": \"Planning the 2027 renewal\", \"confidence\": \"high\", \"evidence_quote\": \"You will own our Astra DB and Kafka estate, lead capacity planning, and help us evaluate cost and latency improvements for our multi-region data layer as we plan our 2027 renewal.\", \"named_people\": []}",
+  "tokens_in": 2026,
+  "tokens_out": 192,
+  "model": "claude-haiku-5-5",
+  "prompt_version": "extract_signals.v4"
+}

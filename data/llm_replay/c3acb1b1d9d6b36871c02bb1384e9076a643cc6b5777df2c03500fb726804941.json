@@ -1,7 +1,0 @@
-{
-  "text": "{\"uses_competitor\": true, \"uses_cassandra\": false, \"product\": \"Astra DB\", \"use_case\": \"Product catalog\", \"why_now\": null, \"confidence\": \"high\", \"evidence_quote\": \"Quanta Retail powers its product catalog with Astra DB.\", \"named_people\": []}",
-  "tokens_in": 1967,
-  "tokens_out": 99,
-  "model": "claude-haiku-5-5",
-  "prompt_version": "extract_signals.v3"
-}
