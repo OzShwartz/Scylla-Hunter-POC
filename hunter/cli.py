@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 
 from hunter import db, evaluate, scoring, sources
 from hunter import extract as extract_mod
+from hunter import personalize as personalize_mod
 from hunter.llm import ReplayMissError
 from hunter.models import load_config
 
@@ -70,11 +71,31 @@ def run(
     scoring.score_accounts(conn, config, config.as_of)
     scoring.select_leads(conn, config, datetime.now())
 
+    try:
+        personalize_stats = personalize_mod.draft_invites_for_qualified_leads(
+            conn, config, llm_mode=llm_mode, run_id=run_id, now=datetime.now()
+        )
+    except ReplayMissError as e:
+        conn.close()
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(code=1) from None
+    typer.echo(
+        f"Personalization: {personalize_stats.llm_calls} LLM calls (mode={llm_mode}), "
+        f"{personalize_stats.tokens_in}/{personalize_stats.tokens_out} tokens in/out."
+    )
+    if personalize_stats.forced_review:
+        typer.echo(f"Forced to review (validator failure after retry): {personalize_stats.forced_review}")
+
     db.update_run_counts(
         conn, run_id,
-        models={"extraction": config.llm.models.extraction},
-        prompt_versions={"extract_signals": extract_mod.load_prompt_spec(extract_mod.PROMPT_PATH).version},
-        llm_calls=stats.llm_calls, tokens_in=stats.tokens_in, tokens_out=stats.tokens_out,
+        models={"extraction": config.llm.models.extraction, "personalization": config.llm.models.personalization},
+        prompt_versions={
+            "extract_signals": extract_mod.load_prompt_spec(extract_mod.PROMPT_PATH).version,
+            "personalize": personalize_mod.load_prompt_spec(personalize_mod.PROMPT_PATH).version,
+        },
+        llm_calls=stats.llm_calls + personalize_stats.llm_calls,
+        tokens_in=stats.tokens_in + personalize_stats.tokens_in,
+        tokens_out=stats.tokens_out + personalize_stats.tokens_out,
     )
 
     accounts = db.list_accounts(conn)
@@ -90,6 +111,11 @@ def run(
     for lead in selected:
         typer.echo(f"  {lead['id']} {lead['first_name']} {lead['last_name']} ({lead['persona']}, rank {lead['rank']})")
 
+    messages = db.list_messages(conn)
+    typer.echo(f"\nDrafted messages: {len(messages)}")
+    for m in messages:
+        typer.echo(f"  msg#{m['id']} lead={m['lead_id']} {m['channel']}/{m['variant']} route={m['approval_route']} status={m['status']}")
+
     conn.close()
 
 
@@ -98,7 +124,7 @@ def eval_cmd() -> None:
     """FR-13: compare pipeline output to fixture _expected values."""
     config = load_config()
     conn = db.connect(config.runtime.db_path)
-    card = evaluate.run_evaluation(conn)
+    card = evaluate.run_evaluation(conn, config)
     evaluate.print_scorecard(card)
     conn.close()
     raise typer.Exit(code=0 if card.passed else 1)

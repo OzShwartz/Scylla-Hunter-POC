@@ -367,13 +367,16 @@ Take the top `max_leads_per_account = 2`. Example: at Northwind, Maya (decision 
 | Condition | Route |
 |---|---|
 | `approval_mode = all` | Every draft → human |
-| `approval_mode = threshold` and account score ≥ 80 and all validators pass and at least one high-confidence evidence item | **Auto-approve** |
+| `approval_mode = threshold` and account score ≥ 80 and all validators pass and at least one high-confidence evidence item and no sensitive content | **Auto-approve** |
 | Account score 60–79 | **Human approval** |
 | Validator failed after one retry | Human approval (forced) |
 | No high-confidence evidence | Human approval (forced) |
-| `approval_mode = off` | Auto-approve everything that passes validators (testing only) |
+| **Draft mentions a competitor product, the IBM/DataStax acquisition (`cf_ibm`), or a renewal/contract** | **Human approval (forced), regardless of score or `approval_mode`** |
+| `approval_mode = off` | Auto-approve everything that passes validators (testing only) - still subject to the sensitive-content override above |
 
-Result on fixtures: Northwind's two leads are auto-approved; Lumen, Kestrel and Brightwave go to review.
+Score reflects lead *quality*, not message *risk* - a high-scoring account can still produce a draft that references a competitor product or commercial terms, and that always gets a human's eyes first. This was found during manual review: an early cold email to a 96-scoring lead (Northwind) was auto-approved by score alone, even though it was the most commercially sensitive of the three sample drafts reviewed (it named the IBM/DataStax acquisition and implied a contract renewal date). See `hunter/validators.is_sensitive_content` and AI_WORKFLOW.md.
+
+Result on fixtures: Northwind's two invites are auto-approved (invites never reference a competitor product, by a separate validator); Lumen's, Kestrel's and Brightwave's invites go to review on score alone. Warm and cold emails that legitimately reference the competitor (the core of the pitch, in practice) route to human review far more often than score alone would suggest - this is intentional.
 
 > **All weights and thresholds are starting assumptions.** In production they are calibrated from outcomes: accept and reply rates by signal type show which weights are too high or too low.
 
@@ -516,10 +519,13 @@ Grounding is **enforced by code**, not only requested in the prompt.
 ### 11.5 Personalization: prompt, context, guardrails
 
 **System prompt (summary; full text in `prompts/personalize.md`):**
-- Role: you write for an engineer at ScyllaDB, peer to peer.
-- Allowed facts: only the evidence items and context facts provided, and you must cite their ids.
+- Role: you write for {sender name, title, company} at ScyllaDB, peer to peer.
+- Allowed facts about the lead: only the evidence items and context facts provided, and you must cite their ids.
+- Allowed facts about the sender: name, title and company only - nothing else about the sender's own work or experience may be stated or implied.
 - One value prop, chosen from the persona's allowed list.
-- Rules and banned phrases from config.
+- Rules and banned phrases from config. No filler compliments ("impressive", "great work", ...).
+- Invite: no vendor/product names (DataStax, Astra DB, DSE, IBM) - reference the lead's own work instead; at most one specific number or metric.
+- Warm email opens by acknowledging the accepted connection; cold email never assumes one.
 - Return JSON only.
 
 **Context sent (minimal by design):**
@@ -554,6 +560,11 @@ No email addresses or other personal data that the text does not need.
 | Grounding (§11.4) | ✓ | ✓ |
 | Opt-out line present | — | ✓ |
 | First name and company match the lead | ✓ | ✓ |
+| No sender claims beyond name/title/company | ✓ | ✓ |
+| No competitor/vendor product name (DataStax/Astra/DSE/IBM) | ✓ | — (vendor context belongs here) |
+| Connection framing matches variant (warm acknowledges it, cold doesn't assume it) | — | ✓ |
+
+The sender-claims and connection-framing checks are pattern-based (regex over known phrasings), not a general semantic grounding check - free-text hallucination has no fully general deterministic test. They catch the known failure shape; see `hunter/validators.py`.
 
 **Guardrails summary:**
 - *Input:* source text is delimited and treated as data (prompt-injection defence). Only minimal context is sent.
@@ -607,14 +618,14 @@ The rule logic is identical in all three. Only the source of events and time cha
 
 1. `hunter run`:
    - 5 leads qualified;
-   - Maya and Tom (Northwind) are auto-approved and their invites "sent";
-   - Joris, Lior and Dana are pending approval.
+   - Maya and Tom (Northwind) are auto-approved and their invites "sent" (invites never name a competitor product, so the sensitive-content override in §9.6 never applies to them);
+   - Joris, Lior and Dana are pending approval (score-based).
 2. `hunter review`, then approve, edit one, approve the rest. Their invites are "sent".
 3. `hunter simulate --days 7`:
-   - Maya accepts on day 2 → warm email, auto-approved and "sent";
-   - Lior accepts on day 4 → warm email, pending approval;
-   - Tom, Joris and Dana do not accept → cold emails on day 7. Tom's is auto-approved; Joris's and Dana's wait for approval.
-4. `hunter review`, then approve the three pending emails.
+   - Maya accepts on day 2 → warm email. **Likely pending approval despite the 96 score**: Northwind's only evidence is Astra DB usage, and a grounded warm email will almost certainly name it, triggering the §9.6 sensitive-content override. Not yet confirmed against a real run - Phase 4 will confirm when `simulate` is built.
+   - Lior accepts on day 4 → warm email, pending approval (score-based, 78 < 80; confirmed by manual sample - his evidence is self-managed Apache Cassandra, not a DataStax/IBM product, so the override does not apply here).
+   - Tom, Joris and Dana do not accept → cold emails on day 7. **Tom's is now pending approval, not auto-approved as earlier assumed** - confirmed by manual sample: his cold email names Astra DB, forcing review despite Northwind's 96 score. This was the routing gap found in review (§9.6). Joris's (DSE) and Dana's (Astra DB, champion move) were already pending on score alone and will likely also now be forced by content.
+4. `hunter review`, then approve the pending emails.
 5. `hunter report`: the funnel shows 5 invited, 2 accepted, 5 emailed (2 warm, 3 cold).
 
 ---

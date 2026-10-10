@@ -21,6 +21,7 @@ PoC for a ScyllaDB GTM Engineer home assignment: find DataStax/Cassandra users, 
    - Never read, print, log or commit `.env`, or any key or token.
    - Never put a key in code, tests, fixtures, replay files or docs.
 7. **Fixtures:** `_expected*` fields are test oracles. Pipeline code must never read them; only `hunter/evaluate.py` and tests may.
+8. **Never bulk-delete `data/llm_replay`.** Prune only by prompt version, via the `record-replay` skill, and check `git status` before committing.
 
 ## Stack
 - Python 3.11+, Typer, Pydantic v2, PyYAML, SQLite (stdlib), Jinja2, anthropic SDK, python-dotenv, pytest.

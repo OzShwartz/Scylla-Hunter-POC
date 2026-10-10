@@ -25,7 +25,9 @@ llm:
     personalization: "claude-opus-5-5"   # customer-facing writing -> strongest model
   max_tokens:
     extraction: 400
-    personalization: 700
+    personalization: 1200   # effort:medium can spend ~500 tokens on hidden thinking before the
+                             # actual draft; 700 was observed truncating mid-response (stop_reason:
+                             # max_tokens) - see AI_WORKFLOW.md
   effort:                        # reasoning effort (low|medium|high|xhigh|max) - this model family has
     extraction: "low"            # no temperature param; it spends part of max_tokens on hidden
     personalization: "medium"    # thinking unless told not to. "low" keeps extraction fast and cheap;
@@ -96,12 +98,14 @@ hitl:
   force_review_if:
     - validator_failed_after_retry
     - no_high_confidence_evidence
+    - sensitive_content   # mentions a competitor product, the IBM/DataStax acquisition (cf_ibm),
+                           # or a renewal/contract - regardless of account score or approval_mode
   production_note: "LinkedIn invites are always sent manually by an SDR; auto applies to email only."
 
 # ---------- Messaging ----------
 messaging:
-  prompt_version: "personalize.v1"
-  sender: { name: "Oz", company: "ScyllaDB" }
+  prompt_version: "personalize.v4"
+  sender: { name: "Oz", title: "GTM Engineer", company: "ScyllaDB" }
   linkedin_invite_max_chars: 280   # LinkedIn note limits vary by account type; keep a margin
   email_max_words: 120
   value_props:                     # verify:true = must be confirmed by ScyllaDB product marketing
@@ -117,7 +121,7 @@ messaging:
     - "No FUD about IBM or DataStax. The acquisition may only be framed as a good moment to review options."
     - "LinkedIn invite: no pitch, no link, one concrete reference to their work."
     - "Email: one value prop matched to persona, one soft call to action, an opt-out line."
-  banned_phrases: ["I hope this finds you well", "revolutionary", "game-changer", "synergy", "quick call"]
+  banned_phrases: ["I hope this finds you well", "revolutionary", "game-changer", "synergy", "quick call", "impressive"]
 
 # ---------- Sequencing (trigger rules) ----------
 sequence:

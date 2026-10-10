@@ -10,7 +10,9 @@ import sqlite3
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from hunter import db
+from hunter import db, validators
+from hunter.models import Config, DraftResult
+from hunter.scoring import evidence_signals_for_account
 
 EXTRACTION_FIELDS = ("uses_competitor", "uses_cassandra", "product", "confidence")
 STATUS_MAP = {"QUALIFIED": "SELECTED", "DEPRIORITIZED": "DEPRIORITIZED", "REJECTED": "REJECTED", "SUPPRESSED": "SUPPRESSED"}
@@ -27,6 +29,7 @@ class ScoreCard:
     selection_mismatches: list[str] = field(default_factory=list)
     grounding_correct: int | None = None
     grounding_total: int | None = None
+    grounding_mismatches: list[str] = field(default_factory=list)
 
     @property
     def extraction_accuracy(self) -> float:
@@ -107,13 +110,42 @@ def evaluate_selection(conn: sqlite3.Connection, raw_fixtures: dict) -> tuple[in
     return correct, total, mismatches
 
 
-def run_evaluation(conn: sqlite3.Connection, fixtures_path: str | Path = "data/fixtures.json") -> ScoreCard:
+def evaluate_grounding(conn: sqlite3.Connection, config: Config) -> tuple[int, int, list[str]]:
+    """PRD §7.3: messages whose evidence_ids all exist (and belong to the lead's account)
+    and whose DataStax/Astra/DSE mentions, if any, cite high-confidence evidence.
+    """
+    correct = 0
+    total = 0
+    mismatches = []
+
+    for msg in db.list_messages(conn):
+        total += 1
+        lead = db.get_lead(conn, msg["lead_id"])
+        evidence_signals = evidence_signals_for_account(conn, lead["account_id"])
+        draft = DraftResult(
+            subject=msg["subject"], body=msg["body"],
+            evidence_ids=json.loads(msg["evidence_ids"]), value_prop_ids=json.loads(msg["value_prop_ids"]),
+        )
+        errors = validators.validate_grounding(draft, evidence_signals, config)
+        if errors:
+            mismatches.append(f"message #{msg['id']} (lead {msg['lead_id']}): {'; '.join(errors)}")
+        else:
+            correct += 1
+
+    return correct, total, mismatches
+
+
+def run_evaluation(
+    conn: sqlite3.Connection, config: Config | None = None, fixtures_path: str | Path = "data/fixtures.json"
+) -> ScoreCard:
     raw_fixtures = _load_raw_fixtures(fixtures_path)
     card = ScoreCard()
     card.extraction_correct, card.extraction_total, card.false_positive_signal_id, card.false_positive_rejected = (
         evaluate_extraction(conn, raw_fixtures)
     )
     card.selection_correct, card.selection_total, card.selection_mismatches = evaluate_selection(conn, raw_fixtures)
+    if config is not None:
+        card.grounding_correct, card.grounding_total, card.grounding_mismatches = evaluate_grounding(conn, config)
     return card
 
 
@@ -128,5 +160,7 @@ def print_scorecard(card: ScoreCard) -> None:
         print(f"  MISMATCH: {m}")
     if card.grounding_total:
         print(f"Grounding rate:        {card.grounding_correct}/{card.grounding_total} ({card.grounding_rate:.0%})")
+        for m in card.grounding_mismatches:
+            print(f"  MISMATCH: {m}")
     print()
     print("VERDICT: PASS" if card.passed else "VERDICT: REGRESSION")

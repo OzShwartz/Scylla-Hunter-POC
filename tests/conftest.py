@@ -8,6 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from hunter import db, scoring
 from hunter import extract as extract_mod
+from hunter import personalize as personalize_mod
 from hunter.models import load_config
 from hunter.sources import load_fixtures
 
@@ -40,6 +41,7 @@ def pipeline_conn(config):
     extract_mod.detect_champion_moves(conn, fixtures)
     scoring.score_accounts(conn, config, config.as_of)
     scoring.select_leads(conn, config, datetime.now())
+    personalize_mod.draft_invites_for_qualified_leads(conn, config, llm_mode="replay", run_id=None, now=datetime.now())
 
     yield conn
     conn.close()

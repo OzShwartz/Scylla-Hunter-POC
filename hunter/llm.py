@@ -93,13 +93,11 @@ def call_llm(
     key = _hash_key(prompt_version, model, user)
     path = _replay_path(replay_dir, key)
 
-    if mode == "replay":
-        if not path.exists():
-            raise ReplayMissError(
-                f"No replay found for prompt_version={prompt_version!r}, model={model!r} "
-                f"(key {key[:12]}...). Run once with `--llm live` and an ANTHROPIC_API_KEY "
-                "in .env to record it, or use the committed replay set in data/llm_replay/."
-            )
+    # A cache hit short-circuits both modes: per PRD §11.2, "a re-run with an unchanged
+    # input makes no call" - live mode is for recording *new or changed* prompts, not
+    # for blindly re-calling everything (which would also churn replay files with
+    # harmless but noisy wording variance on every re-run).
+    if path.exists():
         cached = json.loads(path.read_text())
         return LLMResult(
             text=cached["text"],
@@ -107,6 +105,13 @@ def call_llm(
             tokens_out=cached["tokens_out"],
             model=cached["model"],
             from_replay=True,
+        )
+
+    if mode == "replay":
+        raise ReplayMissError(
+            f"No replay found for prompt_version={prompt_version!r}, model={model!r} "
+            f"(key {key[:12]}...). Run once with `--llm live` and an ANTHROPIC_API_KEY "
+            "in .env to record it, or use the committed replay set in data/llm_replay/."
         )
 
     if mode == "live":

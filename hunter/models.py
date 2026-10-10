@@ -142,6 +142,7 @@ class ContextFact(BaseModel):
 
 class MessagingSender(BaseModel):
     name: str
+    title: str
     company: str
 
 
@@ -217,6 +218,18 @@ class ExtractionResult(BaseModel):
     confidence: Literal["high", "medium", "low"]
     evidence_quote: str | None = None
     named_people: list[NamedPerson] = Field(default_factory=list)
+
+
+class DraftResult(BaseModel):
+    """LLM personalization output (PRD §11.5)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    subject: str | None = None
+    body: str
+    evidence_ids: list[str] = Field(default_factory=list)
+    value_prop_ids: list[str] = Field(default_factory=list)
+    context_fact_ids: list[str] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------

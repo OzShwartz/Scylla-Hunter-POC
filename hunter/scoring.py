@@ -37,8 +37,12 @@ def compute_signal_value(
     return weight * decay * confidence_factor
 
 
-def _is_evidence(row: sqlite3.Row) -> bool:
+def is_evidence_signal(row: sqlite3.Row) -> bool:
     return bool(row["uses_competitor"]) or bool(row["uses_cassandra"])
+
+
+def evidence_signals_for_account(conn: sqlite3.Connection, account_id: str) -> list[sqlite3.Row]:
+    return [row for row in db.list_signals_for_account(conn, account_id) if is_evidence_signal(row)]
 
 
 def _shows_intent(row: sqlite3.Row, config: Config) -> bool:
@@ -71,7 +75,7 @@ def score_account(
     # 2. Account gates (PRD §9.1 step 2)
     employees = account_row["employees"]
     signals = db.list_signals_for_account(conn, account_row["id"])
-    evidence_signals = [s for s in signals if _is_evidence(s)]
+    evidence_signals = [s for s in signals if is_evidence_signal(s)]
 
     if employees is None:
         return AccountScore(0, 0, 0, 0, "NEEDS_ENRICHMENT", "Employees unknown (live source)")
