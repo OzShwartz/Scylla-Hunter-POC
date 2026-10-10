@@ -1,0 +1,7 @@
+{
+  "text": "{\"uses_competitor\": true, \"uses_cassandra\": true, \"product\": \"DataStax Enterprise\", \"use_case\": \"Storing user profiles for real-time ad targeting\", \"why_now\": null, \"confidence\": \"high\", \"evidence_quote\": \"Orbit Media uses DataStax Enterprise to store user profiles for real-time ad targeting.\", \"named_people\": []}",
+  "tokens_in": 1978,
+  "tokens_out": 126,
+  "model": "claude-haiku-5-5",
+  "prompt_version": "extract_signals.v3"
+}

@@ -1,0 +1,7 @@
+{
+  "text": "{\"uses_competitor\": true, \"uses_cassandra\": true, \"product\": \"DataStax Enterprise\", \"use_case\": null, \"why_now\": null, \"confidence\": \"medium\", \"evidence_quote\": \"Detected technologies: Apache Cassandra, DataStax Enterprise, Kubernetes, Kafka, PostgreSQL.\", \"named_people\": []}",
+  "tokens_in": 1990,
+  "tokens_out": 124,
+  "model": "claude-haiku-5-5",
+  "prompt_version": "extract_signals.v3"
+}

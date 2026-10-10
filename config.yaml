@@ -26,8 +26,11 @@ llm:
   max_tokens:
     extraction: 400
     personalization: 700
+  effort:                        # reasoning effort (low|medium|high|xhigh|max); this model
+    extraction: "low"            # family spends part of max_tokens on hidden thinking unless
+    personalization: "medium"    # told not to - "low" keeps simple extraction fast and cheap
   max_retries_on_validation_fail: 1      # then route to human review
-  temperature: 0.3
+  temperature: 0.3               # unused: this SDK/model family has no temperature param (see hunter/llm.py)
 
 # ---------- Account level ----------
 icp:

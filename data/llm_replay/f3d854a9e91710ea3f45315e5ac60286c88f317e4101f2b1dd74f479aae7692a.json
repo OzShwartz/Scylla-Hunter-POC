@@ -1,0 +1,7 @@
+{
+  "text": "{\"uses_competitor\": true, \"uses_cassandra\": true, \"product\": \"Astra DB\", \"use_case\": \"fraud scoring\", \"why_now\": \"single-digit millisecond reads across three regions at 40k transactions per second\", \"confidence\": \"high\", \"evidence_quote\": \"Northwind Payments runs fraud scoring on Astra DB.\", \"named_people\": [{\"name\": \"Dana Weiss\", \"role\": \"Engineering Manager\"}]}",
+  "tokens_in": 2046,
+  "tokens_out": 151,
+  "model": "claude-haiku-5-5",
+  "prompt_version": "extract_signals.v3"
+}

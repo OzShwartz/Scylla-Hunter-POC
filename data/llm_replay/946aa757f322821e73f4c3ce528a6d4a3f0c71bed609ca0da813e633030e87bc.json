@@ -1,0 +1,7 @@
+{
+  "text": "{\"uses_competitor\": false, \"uses_cassandra\": true, \"product\": \"Apache Cassandra (self-managed)\", \"use_case\": \"Leaderboard cluster for Kestrel Games, tail latency tuning\", \"why_now\": null, \"confidence\": \"high\", \"evidence_quote\": \"How we run 60 self-managed Apache Cassandra nodes, fight GC pauses and compaction storms, and what we are considering next.\", \"named_people\": [{\"name\": \"Lior Ben-David\", \"role\": \"Principal Engineer, Kestrel Games\"}]}",
+  "tokens_in": 2046,
+  "tokens_out": 187,
+  "model": "claude-haiku-5-5",
+  "prompt_version": "extract_signals.v3"
+}

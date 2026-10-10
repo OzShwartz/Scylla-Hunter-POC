@@ -1,0 +1,7 @@
+{
+  "text": "{\"uses_competitor\": true, \"uses_cassandra\": true, \"product\": \"Astra DB\", \"use_case\": \"vector search prototype\", \"why_now\": null, \"confidence\": \"medium\", \"evidence_quote\": \"Astra DB free tier was easy to start with for our vector search prototype.\", \"named_people\": []}",
+  "tokens_in": 1988,
+  "tokens_out": 103,
+  "model": "claude-haiku-5-5",
+  "prompt_version": "extract_signals.v3"
+}
