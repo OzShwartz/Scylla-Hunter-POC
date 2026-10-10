@@ -8,7 +8,7 @@ from datetime import datetime
 import typer
 from dotenv import load_dotenv
 
-from hunter import db, evaluate, hitl, scoring, sources
+from hunter import db, dispatch, evaluate, hitl, scoring, sources, triggers
 from hunter import extract as extract_mod
 from hunter import personalize as personalize_mod
 from hunter.llm import ReplayMissError
@@ -72,6 +72,12 @@ def run(
     scoring.score_accounts(conn, config, config.as_of)
     scoring.select_leads(conn, config, datetime.now())
 
+    leads = db.list_leads(conn)
+    selected = [lead for lead in leads if lead["status"] == "QUALIFIED"]
+    typer.echo(f"\nSelected leads: {len(selected)}/{len(leads)}")
+    for lead in selected:
+        typer.echo(f"  {lead['id']} {lead['first_name']} {lead['last_name']} ({lead['persona']}, rank {lead['rank']})")
+
     try:
         personalize_stats = personalize_mod.draft_invites_for_qualified_leads(
             conn, config, llm_mode=llm_mode, run_id=run_id, now=datetime.now()
@@ -86,6 +92,10 @@ def run(
     )
     if personalize_stats.forced_review:
         typer.echo(f"Forced to review (validator failure after retry): {personalize_stats.forced_review}")
+
+    dispatch_stats = dispatch.dispatch_approved(conn, config, run_id=run_id, now=datetime.now())
+    if dispatch_stats.sent_message_ids:
+        typer.echo(f"\n{len(dispatch_stats.sent_message_ids)} message(s) dispatched (dry-run) - see outbox.jsonl")
 
     db.update_run_counts(
         conn, run_id,
@@ -105,12 +115,6 @@ def run(
     for a in qualified:
         typer.echo(f"  {a['id']} {a['name']}: score={a['account_score']} -> {a['status']}")
         typer.echo(f"    people_query: {a['people_query']}")
-
-    leads = db.list_leads(conn)
-    selected = [lead for lead in leads if lead["status"] == "QUALIFIED"]
-    typer.echo(f"\nSelected leads: {len(selected)}/{len(leads)}")
-    for lead in selected:
-        typer.echo(f"  {lead['id']} {lead['first_name']} {lead['last_name']} ({lead['persona']}, rank {lead['rank']})")
 
     messages = db.list_messages(conn)
     typer.echo(f"\nDrafted messages: {len(messages)}")
@@ -188,6 +192,7 @@ def approve(
         typer.echo(f"Approved {len(approved_ids)} draft(s).")
         for message, reason in skipped:
             typer.echo(f"  Skipped msg#{message['id']}: {reason} - approve individually with `hunter approve {message['id']}`")
+        dispatch.dispatch_approved(conn, config, run_id=None, now=datetime.now())
         conn.close()
         return
     if message_id is None:
@@ -201,6 +206,7 @@ def approve(
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(code=1) from None
     typer.echo(f"Approved msg#{message_id}.")
+    dispatch.dispatch_approved(conn, config, run_id=None, now=datetime.now())
     conn.close()
 
 
@@ -242,6 +248,83 @@ def edit(
             typer.echo(f"  - {err}")
     else:
         typer.echo(f"Edited msg#{message_id}: validators pass, approved.")
+        dispatch.dispatch_approved(conn, config, run_id=None, now=datetime.now())
+    conn.close()
+
+
+@app.command()
+def event(
+    event_type: str = typer.Argument(..., help="Only 'connection-accepted' is supported (PRD §12.2)"),
+    lead: str = typer.Option(..., "--lead", help="Lead id"),
+    llm: str = typer.Option(None, "--llm", help="replay|live (overrides config.yaml's llm.mode)"),
+) -> None:
+    """FR-8: inject an external event (the PoC's CLI event source, PRD §12.2). R2."""
+    if event_type != "connection-accepted":
+        typer.echo(f"Unknown event type {event_type!r}. Supported: connection-accepted", err=True)
+        raise typer.Exit(code=1)
+
+    config = load_config()
+    llm_mode = llm or config.llm.mode
+    conn = db.connect(config.runtime.db_path)
+    run_id = db.insert_run(conn, command="event", llm_mode=llm_mode, started_at=datetime.now())
+    stats = triggers.TriggerStats()
+    try:
+        message_id = triggers.handle_connection_accepted(
+            conn, config, lead, llm_mode=llm_mode, run_id=run_id, now=datetime.now(), stats=stats
+        )
+    except ReplayMissError as e:
+        conn.close()
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(code=1) from None
+
+    if message_id is None:
+        typer.echo(f"No-op: lead {lead} is not currently INVITED (already accepted, already emailed, or never invited).")
+        conn.close()
+        return
+
+    typer.echo(f"Lead {lead} -> ACCEPTED. Warm email drafted as msg#{message_id}.")
+    if stats.forced_review:
+        typer.echo(f"Forced to review (validator failure after retry): {stats.forced_review}")
+    db.update_run_counts(conn, run_id, llm_calls=stats.llm_calls, tokens_in=stats.tokens_in, tokens_out=stats.tokens_out)
+    dispatch.dispatch_approved(conn, config, run_id=run_id, now=datetime.now())
+    conn.close()
+
+
+@app.command()
+def simulate(
+    days: int = typer.Option(..., "--days", help="Advance the simulated clock to N days after each invite was sent"),
+    llm: str = typer.Option(None, "--llm", help="replay|live (overrides config.yaml's llm.mode)"),
+) -> None:
+    """PRD §12.2/§12.3: replay fixtures.simulated_events up to --days, then
+    fire R3's cold email for anyone still INVITED once the day threshold is reached."""
+    config = load_config()
+    llm_mode = llm or config.llm.mode
+    fixtures = sources.load_fixtures()
+
+    conn = db.connect(config.runtime.db_path)
+    run_id = db.insert_run(conn, command="simulate", llm_mode=llm_mode, started_at=datetime.now())
+    try:
+        stats = triggers.simulate(
+            conn, config, days=days, llm_mode=llm_mode, run_id=run_id, now=datetime.now(),
+            scripted_events=fixtures.simulated_events,
+        )
+    except ReplayMissError as e:
+        conn.close()
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(code=1) from None
+
+    typer.echo(f"Simulated to day {days}.")
+    if stats.warm_drafted:
+        typer.echo(f"Warm emails drafted (connection accepted): {', '.join(stats.warm_drafted)}")
+    if stats.cold_drafted:
+        typer.echo(f"Cold emails drafted (no accept by day {days}): {', '.join(stats.cold_drafted)}")
+    if stats.forced_review:
+        typer.echo(f"Forced to review (validator failure after retry): {stats.forced_review}")
+
+    db.update_run_counts(conn, run_id, llm_calls=stats.llm_calls, tokens_in=stats.tokens_in, tokens_out=stats.tokens_out)
+    dispatch_stats = dispatch.dispatch_approved(conn, config, run_id=run_id, now=datetime.now())
+    if dispatch_stats.sent_message_ids:
+        typer.echo(f"\n{len(dispatch_stats.sent_message_ids)} message(s) dispatched (dry-run) - see outbox.jsonl")
     conn.close()
 
 

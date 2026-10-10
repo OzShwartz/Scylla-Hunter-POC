@@ -1,0 +1,7 @@
+{
+  "text": "{\"subject\":\"Moving a 2B events/day DSE workload\",\"body\":\"Hi Joris,\\n\\nI'm Oz, GTM Engineer at ScyllaDB. Lumen Logistics' shipment-tracking service writes 2B events a day to DataStax Enterprise 6.8, and your team's current focus looks to be modernising that cluster and reducing operational toil.\\n\\nWith IBM having completed its acquisition of DataStax in May 2025, this could be a good moment to review options. ScyllaDB provides migration tooling and support for moving live Cassandra/DSE workloads, which is the part that usually matters most when a service can't pause.\\n\\nWould it be useful if I sent over a short outline of how a live DSE migration with our tooling works?\\n\\nReply STOP to opt out.\",\"evidence_ids\":[\"s03\"],\"value_prop_ids\":[\"vp_migrate\"],\"context_fact_ids\":[\"cf_ibm\"]}",
+  "tokens_in": 2454,
+  "tokens_out": 805,
+  "model": "claude-opus-5-5",
+  "prompt_version": "personalize.v4"
+}

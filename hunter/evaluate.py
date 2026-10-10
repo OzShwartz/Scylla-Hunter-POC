@@ -15,7 +15,18 @@ from hunter.models import Config, DraftResult
 from hunter.scoring import evidence_signals_for_account
 
 EXTRACTION_FIELDS = ("uses_competitor", "uses_cassandra", "product", "confidence")
-STATUS_MAP = {"QUALIFIED": "SELECTED", "DEPRIORITIZED": "DEPRIORITIZED", "REJECTED": "REJECTED", "SUPPRESSED": "SUPPRESSED"}
+STATUS_MAP = {
+    "QUALIFIED": "SELECTED",
+    # PRD §14.4: a selected lead that a trigger has since contacted - still correctly
+    # "selected", just further along the lifecycle. Without these, `hunter eval` after
+    # `hunter run` + `approve`/`simulate` would read as a regression it isn't.
+    "INVITED": "SELECTED",
+    "ACCEPTED": "SELECTED",
+    "EMAILED": "SELECTED",
+    "DEPRIORITIZED": "DEPRIORITIZED",
+    "REJECTED": "REJECTED",
+    "SUPPRESSED": "SUPPRESSED",
+}
 
 
 @dataclass

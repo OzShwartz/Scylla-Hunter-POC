@@ -179,12 +179,23 @@ def _persona_for_title(title: str, config: Config) -> str | None:
     return None
 
 
+# Once a trigger (R1-R3) has actually contacted a lead, selection must never
+# touch it again or let another lead fill its cap slot. Before dispatch
+# existed (Phases 1-3) a selected lead's status always stayed QUALIFIED, so
+# re-running select_leads was naturally idempotent; now that dispatch
+# advances it past QUALIFIED, re-running select_leads has to recognize these
+# as already-decided and leave them alone (see FR-9a / PRD §9.5's cap).
+ADVANCED_LEAD_STATUSES = {"INVITED", "ACCEPTED", "EMAILED"}
+
+
 def select_leads(conn: sqlite3.Connection, config: Config, now: datetime) -> None:
     for account_row in db.list_accounts(conn):
         leads = db.list_leads_for_account(conn, account_row["id"])
 
         if account_row["status"] == "SUPPRESSED":
             for lead in leads:
+                if lead["status"] in ADVANCED_LEAD_STATUSES:
+                    continue
                 db.update_lead_status(
                     conn, lead["id"], status="SUPPRESSED",
                     reason=f"Account suppressed: {account_row['reason']}", updated_at=now,
@@ -193,14 +204,21 @@ def select_leads(conn: sqlite3.Connection, config: Config, now: datetime) -> Non
 
         if account_row["status"] != "QUALIFIED":
             for lead in leads:
+                if lead["status"] in ADVANCED_LEAD_STATUSES:
+                    continue
                 db.update_lead_status(
                     conn, lead["id"], status="REJECTED",
                     reason=f"Account not qualified: {account_row['reason']}", updated_at=now,
                 )
             continue
 
+        advanced = [lead for lead in leads if lead["status"] in ADVANCED_LEAD_STATUSES]
+        remaining_slots = max(0, config.scoring.max_leads_per_account - len(advanced))
+
         eligible = []
         for lead in leads:
+            if lead["status"] in ADVANCED_LEAD_STATUSES:
+                continue  # already contacted by a trigger on a prior run - frozen, keeps its cap slot
             if lead["email"] in config.suppression.opted_out_emails:
                 db.update_lead_status(
                     conn, lead["id"], status="SUPPRESSED", reason="Email is on the opt-out list", updated_at=now,
@@ -243,7 +261,7 @@ def select_leads(conn: sqlite3.Connection, config: Config, now: datetime) -> Non
         eligible.sort(key=sort_key)
 
         for rank, (lead, persona) in enumerate(eligible, start=1):
-            if rank <= config.scoring.max_leads_per_account:
+            if rank <= remaining_slots:
                 db.update_lead_status(
                     conn, lead["id"], status="QUALIFIED",
                     reason=f"Selected: rank {rank} at a qualified account (score {account_row['account_score']})",
@@ -252,6 +270,10 @@ def select_leads(conn: sqlite3.Connection, config: Config, now: datetime) -> Non
             else:
                 db.update_lead_status(
                     conn, lead["id"], status="DEPRIORITIZED",
-                    reason=f"Qualified but rank {rank} exceeds max_leads_per_account={config.scoring.max_leads_per_account}",
+                    reason=(
+                        f"Qualified but rank {rank} exceeds the remaining cap "
+                        f"({remaining_slots}/{config.scoring.max_leads_per_account} slots open - "
+                        f"{len(advanced)} already contacted)"
+                    ),
                     persona=persona, rank=rank, updated_at=now,
                 )
