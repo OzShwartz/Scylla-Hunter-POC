@@ -1,0 +1,24 @@
+digraph G { rankdir=TB;   graph [fontname="DejaVu Sans", fontsize=11, bgcolor="white", pad=0.3, nodesep=0.45, ranksep=0.55];
+  node  [fontname="DejaVu Sans", fontsize=10, color="#3b4a63", fontcolor="#1b2230", penwidth=1.2];
+  edge  [fontname="DejaVu Sans", fontsize=9, color="#5b6475", fontcolor="#3b4a63", arrowsize=0.7]; ranksep=0.45;
+  node [shape=box, style="filled", fillcolor="#eef2f8"];
+  SRC [label="Evidence sources"]; PPL [label="People provider"]; LLM [label="Claude API"];
+  SDR [label="SDR / reviewer"]; CH [label="Outbound channels\n(dry-run)"]; PROS [label="Prospect events"]; GTM [label="GTM Lead"];
+  CFG [shape=parallelogram, fillcolor="#fff6e0", label="config.yaml"];
+  node [shape=circle, style="filled", fillcolor="#2f5bd3", fontcolor="white", width=1.05, fixedsize=true, fontsize=9];
+  P1 [label="1.0\nDiscover &\nextract"]; P2 [label="2.0\nQualify\naccounts"]; P3 [label="3.0\nSelect\nleads"];
+  P4 [label="4.0\nPersonalize"]; P5 [label="5.0\nRoute &\ndispatch"]; P6 [label="6.0\nSequence &\ntrigger"]; P7 [label="7.0\nReport &\neval"];
+  node [shape=cylinder, style="filled", fillcolor="#e8f4ec", fontcolor="#1b2230", width=1.2, fixedsize=false, fontsize=10];
+  D1 [label="D1 accounts"]; D2 [label="D2 signals"]; D3 [label="D3 leads"]; D4 [label="D4 messages"]; D5 [label="D5 events"];
+  F1 [shape=note, fillcolor="#fff6e0", label="outbox.jsonl"];
+  SRC -> P1 [label="raw text"]; P1 -> LLM [label="text"]; LLM -> P1 [label="evidence JSON"];
+  P1 -> D2; P1 -> D1;
+  D1 -> P2; D2 -> P2 [label="evidence, age"]; CFG -> P2 [label="gates, weights"]; P2 -> D1 [label="score + reason"];
+  PPL -> P3; D1 -> P3 [label="qualified"]; CFG -> P3 [label="personas, suppression"]; P3 -> D3 [label="status + reason"];
+  D3 -> P4; D2 -> P4 [label="evidence items"]; CFG -> P4 [label="value props, rules"];
+  P4 -> LLM [label="prompt"]; LLM -> P4 [label="draft JSON"]; P4 -> D4 [label="validated draft"];
+  D4 -> P5; CFG -> P5 [label="approval mode"]; P5 -> SDR [label="pending"]; SDR -> P5 [label="decision"];
+  P5 -> F1; P5 -> CH [label="would send"];
+  PROS -> P6 [label="accepted"]; D5 -> P6 [label="history"]; P6 -> P4 [label="warm / cold draft"]; P6 -> D5; P6 -> D3 [label="lead status"];
+  D1 -> P7; D3 -> P7; D4 -> P7; D5 -> P7; P7 -> GTM [label="report, scorecard"];
+}

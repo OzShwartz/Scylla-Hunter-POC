@@ -1,0 +1,129 @@
+{
+  "meta": {
+    "as_of": "2026-10-08",
+    "note": "All companies, people, URLs and texts are FICTIONAL. They model the kinds of public evidence a real hunter would collect. '_expected' fields are test oracles, not inputs.",
+    "sources_modeled": ["competitor customer stories", "conference talks", "job posts", "technographic provider", "review sites", "champion job changes"]
+  },
+
+  "accounts": [
+    { "id": "a01", "name": "Northwind Payments", "domain": "northwindpay.example", "industry": "fintech",   "employees": 2400, "hq": "London, UK" },
+    { "id": "a02", "name": "Lumen Logistics",    "domain": "lumenlogistics.example", "industry": "logistics", "employees": 900,  "hq": "Rotterdam, NL" },
+    { "id": "a03", "name": "Orbit Media",        "domain": "orbitmedia.example", "industry": "adtech",    "employees": 700,  "hq": "New York, US" },
+    { "id": "a04", "name": "Kestrel Games",      "domain": "kestrelgames.example", "industry": "gaming",    "employees": 600,  "hq": "Austin, US" },
+    { "id": "a05", "name": "Pinecrest Analytics","domain": "pinecrest.example", "industry": "saas",      "employees": 450,  "hq": "Toronto, CA" },
+    { "id": "a06", "name": "Quanta Retail",      "domain": "quantaretail.example", "industry": "ecommerce", "employees": 3000, "hq": "Berlin, DE" },
+    { "id": "a07", "name": "DataStax",           "domain": "datastax.com", "industry": "software",  "employees": 600,  "hq": "Santa Clara, US" },
+    { "id": "a08", "name": "Brightwave AI",      "domain": "brightwave.example", "industry": "ai_ml",     "employees": 350,  "hq": "Tel Aviv, IL" },
+    { "id": "a09", "name": "Sprocket Labs",      "domain": "sprocketlabs.example", "industry": "ai_ml",     "employees": 12,   "hq": "Lisbon, PT" }
+  ],
+
+  "raw_signals": [
+    {
+      "id": "s01", "account_id": "a01", "type": "customer_reference",
+      "source_url": "https://competitor.example/customers/northwind-payments",
+      "published_at": "2025-11-12",
+      "text": "Northwind Payments runs fraud scoring on Astra DB. 'We process 40k transactions per second and needed single-digit millisecond reads across three regions,' said Dana Weiss, Engineering Manager at Northwind. The team moved from self-managed Cassandra to Astra DB in 2024.",
+      "_expected": { "uses_competitor": true, "product": "Astra DB", "confidence": "high", "use_case": "real-time fraud scoring", "named_people": [{ "name": "Dana Weiss", "role": "Engineering Manager" }] }
+    },
+    {
+      "id": "s02", "account_id": "a01", "type": "job_post",
+      "source_url": "https://jobs.example/northwind/staff-sre-data",
+      "published_at": "2026-09-20",
+      "text": "Staff SRE, Data Platform. You will own our Astra DB and Kafka estate, lead capacity planning, and help us evaluate cost and latency improvements for our multi-region data layer as we plan our 2027 renewal.",
+      "_expected": { "uses_competitor": true, "product": "Astra DB", "confidence": "high", "use_case": "multi-region data layer", "why_now": "evaluating cost/latency ahead of 2027 renewal" }
+    },
+    {
+      "id": "s03", "account_id": "a02", "type": "job_post",
+      "source_url": "https://jobs.example/lumen/platform-engineer",
+      "published_at": "2026-08-05",
+      "text": "Platform Engineer. Our shipment-tracking service writes 2B events/day to DataStax Enterprise 6.8. We are evaluating options to modernise this cluster and reduce operational toil. Experience with Cassandra compaction and repair is a must.",
+      "_expected": { "uses_competitor": true, "product": "DataStax Enterprise", "confidence": "high", "use_case": "shipment event tracking", "why_now": "evaluating options to modernise DSE cluster" }
+    },
+    {
+      "id": "s04", "account_id": "a02", "type": "tech_stack",
+      "source_url": "https://technographics.example/lumenlogistics",
+      "published_at": "2026-06-01",
+      "text": "Detected technologies: Apache Cassandra, DataStax Enterprise, Kubernetes, Kafka, PostgreSQL.",
+      "_expected": { "uses_competitor": true, "product": "DataStax Enterprise", "confidence": "medium" }
+    },
+    {
+      "id": "s05", "account_id": "a03", "type": "customer_reference",
+      "source_url": "https://competitor.example/customers/orbit-media",
+      "published_at": "2021-03-02",
+      "text": "Orbit Media uses DataStax Enterprise to store user profiles for real-time ad targeting.",
+      "_expected": { "uses_competitor": true, "product": "DataStax Enterprise", "confidence": "high", "use_case": "ad targeting profiles", "note": "5+ years old — recency decay should make this weak" }
+    },
+    {
+      "id": "s06", "account_id": "a04", "type": "conference_talk",
+      "source_url": "https://conf.example/2026/talks/kestrel-leaderboards",
+      "published_at": "2026-05-14",
+      "text": "Talk: 'Taming tail latency in our leaderboard cluster' by Lior Ben-David, Principal Engineer, Kestrel Games. How we run 60 self-managed Apache Cassandra nodes, fight GC pauses and compaction storms, and what we are considering next.",
+      "_expected": { "uses_competitor": false, "uses_cassandra": true, "product": "Apache Cassandra (self-managed)", "confidence": "high", "use_case": "game leaderboards", "named_people": [{ "name": "Lior Ben-David", "role": "Principal Engineer" }], "note": "Not a DataStax customer, but a Cassandra user in pain — still in scope" }
+    },
+    {
+      "id": "s07", "account_id": "a04", "type": "tech_stack",
+      "source_url": "https://technographics.example/kestrelgames",
+      "published_at": "2026-07-10",
+      "text": "Detected technologies: Apache Cassandra, Redis, Go, AWS.",
+      "_expected": { "uses_competitor": false, "uses_cassandra": true, "product": "Apache Cassandra", "confidence": "medium" }
+    },
+    {
+      "id": "s08", "account_id": "a05", "type": "job_post",
+      "source_url": "https://jobs.example/pinecrest/analytics-engineer",
+      "published_at": "2026-09-01",
+      "text": "Analytics Engineer. You will report to Cassandra Lee, our Head of Data. Stack: PostgreSQL, Snowflake, dbt, Airflow.",
+      "_expected": { "uses_competitor": false, "uses_cassandra": false, "confidence": "high", "note": "FALSE POSITIVE: 'Cassandra' is a person's name. Keyword matching would select this account; extraction must not." }
+    },
+    {
+      "id": "s09", "account_id": "a06", "type": "customer_reference",
+      "source_url": "https://competitor.example/customers/quanta-retail",
+      "published_at": "2025-02-18",
+      "text": "Quanta Retail powers its product catalog with Astra DB.",
+      "_expected": { "uses_competitor": true, "product": "Astra DB", "confidence": "high", "note": "Strong signal, but Quanta is already a ScyllaDB customer -> suppressed" }
+    },
+    {
+      "id": "s10", "account_id": "a09", "type": "review",
+      "source_url": "https://reviews.example/astra-db/review-8812",
+      "published_at": "2026-04-22",
+      "text": "Review by CTO, Sprocket Labs (11-50 employees): Astra DB free tier was easy to start with for our vector search prototype.",
+      "_expected": { "uses_competitor": true, "product": "Astra DB", "confidence": "medium", "use_case": "vector search prototype", "note": "Real user, but below ICP size -> rejected" }
+    }
+  ],
+
+  "people": [
+    { "id": "p01", "account_id": "a01", "first_name": "Maya",  "last_name": "Rosen",     "title": "VP Engineering",        "department": "Engineering", "skills": ["Engineering leadership", "Distributed systems"], "email": "maya.rosen@northwindpay.example", "linkedin_url": "https://linkedin.example/in/maya-rosen", "location": "London, UK", "previous_companies": [],
+      "_expected": { "status": "SELECTED", "persona": "decision_maker", "reason": "Strong account (recent case study + renewal job post), top-priority persona" } },
+    { "id": "p02", "account_id": "a01", "first_name": "Tom",   "last_name": "Hale",      "title": "Staff SRE",             "department": "Engineering", "skills": ["Cassandra", "Kubernetes", "Kafka"], "email": "tom.hale@northwindpay.example", "linkedin_url": "https://linkedin.example/in/tom-hale", "location": "London, UK", "previous_companies": [],
+      "_expected": { "status": "SELECTED", "persona": "practitioner", "reason": "Second thread in same account; practitioner with Cassandra profile skill (ranks above Ana)" } },
+    { "id": "p03", "account_id": "a01", "first_name": "Ana",   "last_name": "Costa",     "title": "Senior Data Engineer",  "department": "Engineering", "skills": ["Spark", "Snowflake", "Python"], "email": "ana.costa@northwindpay.example", "linkedin_url": "https://linkedin.example/in/ana-costa", "location": "Lisbon, PT", "previous_companies": [],
+      "_expected": { "status": "DEPRIORITIZED", "persona": "practitioner", "reason": "Qualified, but max_leads_per_account=2 already filled by higher-priority people" } },
+    { "id": "p04", "account_id": "a01", "first_name": "Ruth",  "last_name": "Green",     "title": "HR Director",           "department": "HR", "skills": ["Recruiting"], "email": "ruth.green@northwindpay.example", "linkedin_url": "https://linkedin.example/in/ruth-green", "location": "London, UK", "previous_companies": [],
+      "_expected": { "status": "REJECTED", "reason": "Gate: excluded department (HR), even though the account is strong" } },
+    { "id": "p05", "account_id": "a02", "first_name": "Joris", "last_name": "de Vries",  "title": "Head of Platform",      "department": "Engineering", "skills": ["Platform engineering", "Kubernetes"], "email": "joris.devries@lumenlogistics.example", "linkedin_url": "https://linkedin.example/in/joris-devries", "location": "Rotterdam, NL", "previous_companies": [],
+      "_expected": { "status": "SELECTED", "persona": "decision_maker", "reason": "DSE 6.8 job post says 'evaluating options' -> clear why-now" } },
+    { "id": "p06", "account_id": "a02", "first_name": "Rita",  "last_name": "Okafor",    "title": "SRE",                   "department": "Engineering", "skills": ["Cassandra", "Linux"], "email": "r.okafor@lumenlogistics.example", "linkedin_url": "https://linkedin.example/in/rita-okafor", "location": "Rotterdam, NL", "previous_companies": [],
+      "_expected": { "status": "SUPPRESSED", "reason": "Email is on the opt-out list" } },
+    { "id": "p07", "account_id": "a03", "first_name": "Jason", "last_name": "Park",      "title": "Director of Engineering","department": "Engineering", "skills": ["Ad tech", "Java"], "email": "jason.park@orbitmedia.example", "linkedin_url": "https://linkedin.example/in/jason-park", "location": "New York, US", "previous_companies": [],
+      "_expected": { "status": "REJECTED", "reason": "Only evidence is a 2021 case study; recency decay drops account below threshold" } },
+    { "id": "p08", "account_id": "a04", "first_name": "Lior",  "last_name": "Ben-David", "title": "Principal Engineer",    "department": "Engineering", "skills": ["Apache Cassandra", "Go", "Performance tuning"], "email": "lior.bd@kestrelgames.example", "linkedin_url": "https://linkedin.example/in/lior-ben-david", "location": "Austin, US", "previous_companies": [],
+      "_expected": { "status": "SELECTED", "persona": "practitioner", "reason": "Gave a 2026 talk about Cassandra tail-latency pain -> perfect technical angle" } },
+    { "id": "p09", "account_id": "a05", "first_name": "Cassandra", "last_name": "Lee",   "title": "Head of Data",          "department": "Data", "skills": ["Data strategy", "Snowflake"], "email": "cassandra.lee@pinecrest.example", "linkedin_url": "https://linkedin.example/in/cassandra-lee", "location": "Toronto, CA", "previous_companies": [],
+      "_expected": { "status": "REJECTED", "reason": "Gate: no technology evidence (keyword false positive caught by extraction)" } },
+    { "id": "p10", "account_id": "a06", "first_name": "Felix", "last_name": "Braun",     "title": "VP Engineering",        "department": "Engineering", "skills": ["Engineering leadership"], "email": "felix.braun@quantaretail.example", "linkedin_url": "https://linkedin.example/in/felix-braun", "location": "Berlin, DE", "previous_companies": [],
+      "_expected": { "status": "SUPPRESSED", "reason": "Existing ScyllaDB customer domain" } },
+    { "id": "p11", "account_id": "a07", "first_name": "Priya", "last_name": "Nair",      "title": "Solutions Architect",   "department": "Engineering", "skills": ["Astra DB", "Solutions architecture"], "email": "priya.nair@datastax.com", "linkedin_url": "https://linkedin.example/in/priya-nair", "location": "Santa Clara, US", "previous_companies": [],
+      "_expected": { "status": "SUPPRESSED", "reason": "Competitor employee (datastax.com)" } },
+    { "id": "p12", "account_id": "a08", "first_name": "Dana",  "last_name": "Weiss",     "title": "Head of Infrastructure","department": "Engineering", "skills": ["Astra DB", "Cassandra", "SRE"], "email": "dana.weiss@brightwave.example", "linkedin_url": "https://linkedin.example/in/dana-weiss", "location": "Tel Aviv, IL", "previous_companies": [{ "account_id": "a01", "title": "Engineering Manager", "left_at": "2026-07-01" }],
+      "_expected": { "status": "SELECTED", "persona": "decision_maker", "reason": "Champion move: quoted in Northwind's Astra DB case study, joined Brightwave in July 2026. Derived champion_move signal on a08" } },
+    { "id": "p13", "account_id": "a09", "first_name": "Nuno",  "last_name": "Alves",     "title": "CTO",                   "department": "Engineering", "skills": ["Vector search", "Python"], "email": "nuno@sprocketlabs.example", "linkedin_url": "https://linkedin.example/in/nuno-alves", "location": "Lisbon, PT", "previous_companies": [],
+      "_expected": { "status": "REJECTED", "reason": "Gate: 12 employees, below ICP min_employees=100" } }
+  ],
+
+  "simulated_events": [
+    { "lead_id": "p01", "event": "connection_accepted", "day": 2, "note": "warm path -> warm email" },
+    { "lead_id": "p08", "event": "connection_accepted", "day": 4, "note": "warm path -> warm email" },
+    { "lead_id": "p05", "event": null, "note": "no accept by day 7 -> cold email" },
+    { "lead_id": "p02", "event": null, "note": "no accept by day 7 -> cold email" },
+    { "lead_id": "p12", "event": null, "note": "no accept by day 7 -> cold email" }
+  ]
+}

@@ -1,0 +1,133 @@
+# Scylla Hunter configuration
+# Business assumptions (ICP, weights, thresholds, messaging) are ASSUMPTIONS for the PoC.
+# In production the GTM team calibrates them against real outcomes (accept / reply / meeting rates).
+# Every number here is referenced by PRD.md section 9 (Scoring model).
+
+as_of: "2026-10-08"              # fixed "today" for fixtures, so scores and tests are deterministic
+
+campaign:
+  name: "DataStax displacement - Q4 2026"
+  competitor: "DataStax"
+  competitor_products: ["Astra DB", "DataStax Enterprise (DSE)", "Apache Cassandra"]
+
+# ---------- Runtime switches ----------
+runtime:
+  dry_run: true                  # never really send; write to console + outbox.jsonl
+  approval_mode: threshold       # all | threshold | off   (see hitl)
+  db_path: "hunter.db"
+  outbox_path: "examples/outbox.jsonl"
+
+llm:
+  mode: replay                   # replay (default, no key) | live (needs ANTHROPIC_API_KEY)
+  replay_dir: "data/llm_replay"
+  models:
+    extraction: "claude-haiku-5-5"       # simple structured extraction -> cheaper model
+    personalization: "claude-opus-5-5"   # customer-facing writing -> strongest model
+  max_tokens:
+    extraction: 400
+    personalization: 700
+  max_retries_on_validation_fail: 1      # then route to human review
+  temperature: 0.3
+
+# ---------- Account level ----------
+icp:
+  min_employees: 100             # gate: below -> REJECTED; unknown -> NEEDS_ENRICHMENT
+  priority_industries: [fintech, adtech, gaming, ai_ml, logistics, ecommerce, telecom]
+  employee_bands:
+    - { min: 100,  max: 499,  points: 10 }
+    - { min: 500,  max: 1999, points: 15 }
+    - { min: 2000, max: null, points: 20 }
+  industry_bonus: 5              # max ICP points = 25
+
+signals:
+  weights:                       # base value of one account-level signal
+    customer_reference: 40       # competitor case study / logo / testimonial
+    conference_talk: 35          # talk or blog by an engineer about running it
+    champion_move: 35            # known competitor user joined this company
+    job_post: 30                 # hiring for Cassandra / DSE / Astra skills
+    github_code: 25              # public org repo imports a Cassandra/DataStax driver (live source)
+    tech_stack: 20               # technographic provider says they use it
+    review: 20                   # G2 / PeerSpot / TrustRadius review
+  confidence: { high: 1.0, medium: 0.8, low: 0.5 }
+  recency_half_life_months: 18   # value halves every 18 months
+  top_n_signals: 2               # only the two strongest signals count
+  max_evidence_points: 60
+  why_now:
+    window_months: 6
+    bonus: 15
+    # bonus applies if a signal inside the window ALSO shows intent:
+    # extracted why_now is non-empty, OR text matches a keyword, OR type == champion_move
+    migration_keywords: ["migrat", "evaluat", "replac", "alternative", "cost", "renewal", "considering", "modernis", "moderniz"]
+
+scoring:
+  account_threshold: 60          # account_score >= 60 -> QUALIFIED
+  max_leads_per_account: 2
+
+# ---------- Person level ----------
+personas:
+  decision_maker:
+    titles: ["CTO", "VP Engineering", "VP of Engineering", "Head of Engineering", "Head of Platform",
+             "Head of Infrastructure", "Director of Engineering", "Director of Data Infrastructure"]
+    priority: 1
+    angles: ["vp_tco", "vp_cql", "vp_migrate"]
+  practitioner:
+    titles: ["Principal Engineer", "Staff Engineer", "Staff SRE", "Staff Site Reliability Engineer",
+             "Senior Data Engineer", "Database Engineer", "Platform Engineer", "Data Architect", "SRE"]
+    priority: 2
+    angles: ["vp_latency", "vp_cql"]
+  excluded_departments: ["HR", "People", "Finance", "Marketing", "Sales", "Legal"]
+  # person ranking inside a qualified account (lower sorts first):
+  #   1) persona priority  2) named in a signal (speaker / champion / quoted)  3) profile_skill match
+  profile_skill_keywords: ["cassandra", "datastax", "astra db", "cql"]
+
+suppression:                     # checked before anything else
+  competitor_domains: ["datastax.com", "ibm.com"]
+  existing_customer_domains: ["quantaretail.example"]
+  opted_out_emails: ["r.okafor@lumenlogistics.example"]
+  already_contacted: true        # any lead with a SENT message in the DB is never re-contacted
+
+# ---------- Human in the loop ----------
+hitl:
+  auto_send_min_account_score: 80   # threshold mode: >= 80 AND all checks pass -> auto
+  # 60-79 -> PENDING_APPROVAL ; < 60 never drafted
+  force_review_if:
+    - validator_failed_after_retry
+    - no_high_confidence_evidence
+  production_note: "LinkedIn invites are always sent manually by an SDR; auto applies to email only."
+
+# ---------- Messaging ----------
+messaging:
+  prompt_version: "personalize.v1"
+  sender: { name: "Oz", company: "ScyllaDB" }
+  linkedin_invite_max_chars: 280   # LinkedIn note limits vary by account type; keep a margin
+  email_max_words: 120
+  value_props:                     # verify:true = must be confirmed by ScyllaDB product marketing
+    - { id: vp_cql,     text: "CQL / Cassandra-compatible, so applications migrate without a rewrite", verify: true }
+    - { id: vp_latency, text: "Shard-per-core C++ architecture with no JVM garbage-collection pauses, for predictable p99 latency", verify: true }
+    - { id: vp_tco,     text: "Higher throughput per node, which typically means fewer nodes and lower infrastructure cost", verify: true }
+    - { id: vp_migrate, text: "Migration tooling and support for moving live Cassandra/DSE workloads", verify: true }
+  context_facts:
+    - { id: cf_ibm, text: "IBM completed its acquisition of DataStax in May 2025; DataStax offerings are moving under IBM watsonx." }
+  rules:
+    - "Only reference facts present in the lead's evidence items or in context_facts; cite their ids."
+    - "Never claim the prospect uses DataStax unless an evidence item with confidence high says so."
+    - "No FUD about IBM or DataStax. The acquisition may only be framed as a good moment to review options."
+    - "LinkedIn invite: no pitch, no link, one concrete reference to their work."
+    - "Email: one value prop matched to persona, one soft call to action, an opt-out line."
+  banned_phrases: ["I hope this finds you well", "revolutionary", "game-changer", "synergy", "quick call"]
+
+# ---------- Sequencing (trigger rules) ----------
+sequence:
+  - { id: R1, on: "lead_qualified",       action: "draft_linkedin_invite" }
+  - { id: R2, on: "connection_accepted",  action: "draft_email", variant: "warm" }
+  - { id: R3, on: "no_accept_after_days", days: 7, action: "draft_email", variant: "cold" }
+  # every draft then goes through hitl routing before dispatch
+
+# ---------- Live discovery source (real API) ----------
+github_source:
+  enabled: false                 # enable with GITHUB_TOKEN; code search requires auth, 10 req/min
+  queries: ["com.datastax.oss language:Java", "cassandra-driver filename:requirements.txt", "astrapy filename:requirements.txt"]
+  max_results_per_query: 5
+  owner_type: "Organization"     # ignore personal repos
+  exclude_if_repo_mentions: ["scylla"]   # likely already a ScyllaDB user -> flag, do not target
+  # live accounts have no firmographics -> account status NEEDS_ENRICHMENT + generated people-search query

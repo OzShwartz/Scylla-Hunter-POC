@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+*.pyc
+/hunter.db
+.pytest_cache/
+
+# Not part of the repo deliverable (PRD §16.2): keep locally, don't track
+/GTM Engineer - Home Assignment.pdf
+/scylla-hunter-starter.zip

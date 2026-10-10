@@ -1,0 +1,17 @@
+digraph G { rankdir=LR;   graph [fontname="DejaVu Sans", fontsize=11, bgcolor="white", pad=0.3, nodesep=0.45, ranksep=0.55];
+  node  [fontname="DejaVu Sans", fontsize=10, color="#3b4a63", fontcolor="#1b2230", penwidth=1.2];
+  edge  [fontname="DejaVu Sans", fontsize=9, color="#5b6475", fontcolor="#3b4a63", arrowsize=0.7];
+  node [shape=box, style="rounded,filled", fillcolor="#eef2f8"];
+  start [shape=circle, label="", width=0.2, fillcolor="#1b2230"]; end [shape=doublecircle, label="", width=0.15, fillcolor="#1b2230"];
+  SUP [label="SUPPRESSED", fillcolor="#f6e3e3"]; REJ [label="REJECTED", fillcolor="#f6e3e3"]; DEP [label="DEPRIORITIZED", fillcolor="#f3f0e2"];
+  start -> DISCOVERED;
+  DISCOVERED -> SUP [label="competitor, customer,\nopted out, already contacted"];
+  DISCOVERED -> REJ [label="gate failed or\naccount < 60"];
+  DISCOVERED -> DEP [label="account already\nhas 2 leads"];
+  DISCOVERED -> QUALIFIED [label="account 60+ and\npersona match"];
+  QUALIFIED -> INVITED [label="R1 invite sent"];
+  INVITED -> ACCEPTED [label="connection_accepted"];
+  ACCEPTED -> EMAILED [label="R2 warm email"];
+  INVITED -> EMAILED [label="R3 day 7, cold email"];
+  EMAILED -> end;
+}

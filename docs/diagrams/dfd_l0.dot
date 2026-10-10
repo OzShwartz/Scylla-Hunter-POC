@@ -1,0 +1,18 @@
+digraph G { rankdir=LR;   graph [fontname="DejaVu Sans", fontsize=11, bgcolor="white", pad=0.3, nodesep=0.45, ranksep=0.55];
+  node  [fontname="DejaVu Sans", fontsize=10, color="#3b4a63", fontcolor="#1b2230", penwidth=1.2];
+  edge  [fontname="DejaVu Sans", fontsize=9, color="#5b6475", fontcolor="#3b4a63", arrowsize=0.7];
+  node [shape=box, style="filled", fillcolor="#eef2f8"];
+  SRC [label="Public evidence sources\ncustomer stories, talks, job posts,\ntechnographics, reviews, GitHub"];
+  PPL [label="People data provider\n(PoC: fixtures + generated query)"];
+  LLM [label="Claude API\n(default: replay files)"];
+  GTM [label="GTM Engineering Lead"];
+  SDR [label="SDR / reviewer"];
+  CH  [label="Outbound channels\nLinkedIn + Email\n(dry-run: outbox.jsonl)"];
+  PROS[label="Prospect"];
+  H [shape=circle, style="filled", fillcolor="#2f5bd3", fontcolor="white", label="0\nScylla\nHunter", width=1.4];
+  SRC -> H [label="raw signal text"]; PPL -> H [label="people"];
+  H -> LLM [label="prompt + evidence"]; LLM -> H [label="structured JSON"];
+  GTM -> H [label="config"]; H -> GTM [label="report, eval"];
+  H -> SDR [label="drafts to approve"]; SDR -> H [label="approve / edit / reject"];
+  H -> CH [label="would send"]; CH -> PROS [label="message"]; PROS -> H [label="accepted / no response"];
+}
