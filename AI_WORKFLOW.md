@@ -56,3 +56,13 @@ Plus: end every phase with its own git commit (`"Phase N: <what>"`) and stop for
 - `evaluate.py` (extraction + selection) built in Phase 1; grounding check added in Phase 2. No separate later "add eval" phase.
 - `README.md` drafted once at the end (Phase 6), after the full MUST + HITL flow is working, not alongside the MUST-only cut.
 - Process: every phase ends in its own commit and an explicit stop for approval before the next phase begins.
+
+---
+
+## Near-miss — 2026-10-10 — API key pasted into the wrong file
+
+While staging the Phase 0 scaffold commit, `git status` showed `.env.example` (tracked, **not** gitignored) as modified. The diff showed a real `ANTHROPIC_API_KEY` value had been pasted into it — `.env` (gitignored) did not exist. Oz had put the key in the placeholder template instead of the real, ignored file.
+
+**What Claude did:** stopped before staging or committing anything further, inspected only enough to confirm the key was not staged and `.env` didn't exist, restored `.env.example` to its empty placeholder, and flagged it to Oz rather than silently fixing and moving on, or creating `.env` with the key itself (per the standing decision that Oz handles the real key value, never Claude).
+
+**Why this matters / how to apply:** `.env.example` is committed by design (CLAUDE.md §"Security and secrets"); anything pasted there is one `git add` away from being public. The fix is mechanical (empty the placeholder, ask the human to use `.env`), but the check — reading `git status`/`git diff` before every `git add`, especially for files near secrets — is what caught it. Diagnosing this required briefly viewing the key in `cat`/`diff` output, which is a narrow, justified exception to "never print `.env`" when the alternative is risking it reaching git history; the value was not committed, logged elsewhere, or repeated after the fix.
