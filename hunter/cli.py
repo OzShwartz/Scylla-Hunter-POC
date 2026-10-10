@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime
 
 import typer
 from dotenv import load_dotenv
 
-from hunter import db, evaluate, scoring, sources
+from hunter import db, evaluate, hitl, scoring, sources
 from hunter import extract as extract_mod
 from hunter import personalize as personalize_mod
 from hunter.llm import ReplayMissError
@@ -116,6 +117,117 @@ def run(
     for m in messages:
         typer.echo(f"  msg#{m['id']} lead={m['lead_id']} {m['channel']}/{m['variant']} route={m['approval_route']} status={m['status']}")
 
+    conn.close()
+
+
+@app.command()
+def review() -> None:
+    """FR-7: list drafts pending approval, with their evidence and routing reason."""
+    config = load_config()
+    conn = db.connect(config.runtime.db_path)
+    pending = hitl.list_pending(conn)
+    if not pending:
+        typer.echo("No drafts pending approval.")
+        conn.close()
+        return
+
+    for m in pending:
+        lead = db.get_lead(conn, m["lead_id"])
+        account = db.get_account(conn, lead["account_id"])
+        reason = hitl.explain_route(conn, m, account, config)
+        typer.echo(
+            f"\nmsg#{m['id']} | {m['channel']}/{m['variant']} | "
+            f"lead={lead['id']} {lead['first_name']} {lead['last_name']} ({lead['persona']}) @ "
+            f"{account['name']} (score {account['account_score']})"
+        )
+        typer.echo(f"  reason: {reason}")
+        if m["subject"]:
+            typer.echo(f"  subject: {m['subject']}")
+        typer.echo(f"  body: {m['body']}")
+        if m["reviewer_note"]:
+            typer.echo(f"  reviewer_note: {m['reviewer_note']}")
+        evidence_ids = json.loads(m["evidence_ids"])
+        if evidence_ids:
+            typer.echo("  evidence:")
+            for eid in evidence_ids:
+                sig = db.get_signal(conn, eid)
+                if sig is not None:
+                    typer.echo(
+                        f"    {sig['id']} | {sig['type']} | {sig['published_at']} | "
+                        f"{sig['confidence']} | \"{sig['evidence_quote']}\""
+                    )
+        else:
+            typer.echo("  evidence: (none)")
+    conn.close()
+
+
+@app.command()
+def approve(
+    message_id: int = typer.Argument(None),
+    approve_all: bool = typer.Option(False, "--all", help="Approve every pending draft"),
+) -> None:
+    """FR-7: approve one pending draft, or every pending draft with --all."""
+    config = load_config()
+    conn = db.connect(config.runtime.db_path)
+    if approve_all:
+        ids = [m["id"] for m in hitl.list_pending(conn)]
+        for mid in ids:
+            hitl.approve(conn, mid, now=datetime.now())
+        typer.echo(f"Approved {len(ids)} draft(s).")
+        conn.close()
+        return
+    if message_id is None:
+        conn.close()
+        typer.echo("Error: pass a message id or --all", err=True)
+        raise typer.Exit(code=1)
+    try:
+        hitl.approve(conn, message_id, now=datetime.now())
+    except ValueError as e:
+        conn.close()
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(code=1) from None
+    typer.echo(f"Approved msg#{message_id}.")
+    conn.close()
+
+
+@app.command()
+def reject(
+    message_id: int = typer.Argument(...),
+    reason: str = typer.Option(..., "--reason", help="Why this draft is rejected"),
+) -> None:
+    """FR-7: reject one pending draft with a reason."""
+    config = load_config()
+    conn = db.connect(config.runtime.db_path)
+    try:
+        hitl.reject(conn, message_id, reason=reason, now=datetime.now())
+    except ValueError as e:
+        conn.close()
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(code=1) from None
+    typer.echo(f"Rejected msg#{message_id}: {reason}")
+    conn.close()
+
+
+@app.command()
+def edit(
+    message_id: int = typer.Argument(...),
+    text: str = typer.Option(..., "--text", help="Replacement body text"),
+) -> None:
+    """FR-7: edit a pending draft's body; original_body is kept and validators re-run."""
+    config = load_config()
+    conn = db.connect(config.runtime.db_path)
+    try:
+        message, errors = hitl.edit(conn, message_id, text=text, config=config, now=datetime.now())
+    except ValueError as e:
+        conn.close()
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(code=1) from None
+    if errors:
+        typer.echo(f"Edited msg#{message_id}: still fails validation, stays PENDING_APPROVAL:")
+        for err in errors:
+            typer.echo(f"  - {err}")
+    else:
+        typer.echo(f"Edited msg#{message_id}: validators pass, approved.")
     conn.close()
 
 
