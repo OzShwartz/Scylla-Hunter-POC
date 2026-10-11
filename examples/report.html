@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Scylla Hunter Report</title>
+<style>
+  body { font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
+  h1 { border-bottom: 2px solid #333; padding-bottom: 0.3rem; }
+  h2 { margin-top: 2.5rem; border-bottom: 1px solid #ccc; padding-bottom: 0.2rem; }
+  h3 { margin-top: 1.5rem; font-size: 1.05rem; }
+  table { border-collapse: collapse; width: 100%; margin: 0.75rem 0 1.5rem; font-size: 0.9rem; }
+  th, td { border: 1px solid #ddd; padding: 0.4rem 0.6rem; text-align: left; vertical-align: top; }
+  th { background: #f5f5f5; }
+  code { background: #f0f0f0; padding: 0.1rem 0.3rem; border-radius: 3px; }
+  .muted { color: #666; }
+</style>
+</head>
+<body>
+<h1>Scylla Hunter Report</h1>
+
+<h2>Account funnel</h2>
+<table>
+  <tr><th>Stage</th><th>Count</th></tr>
+  
+  <tr><td>gathered</td><td>9</td></tr>
+  
+  <tr><td>qualified</td><td>4</td></tr>
+  
+  <tr><td>suppressed</td><td>2</td></tr>
+  
+  <tr><td>rejected</td><td>3</td></tr>
+  
+</table>
+
+<h2>Lead funnel</h2>
+<table>
+  <tr><th>Stage</th><th>Count</th></tr>
+  
+  <tr><td>gathered</td><td>13</td></tr>
+  
+  <tr><td>qualified</td><td>5</td></tr>
+  
+  <tr><td>drafted</td><td>5</td></tr>
+  
+  <tr><td>approved</td><td>5</td></tr>
+  
+  <tr><td>sent</td><td>5</td></tr>
+  
+  <tr><td>accepted</td><td>2</td></tr>
+  
+  <tr><td>emailed</td><td>5</td></tr>
+  
+</table>
+
+<h2>Engagement</h2>
+<p>
+  Overall invite accept rate: <strong>40%</strong><br>
+  Warm emails sent: 2 &middot; Cold emails sent: 3
+</p>
+<table>
+  <tr><th>Persona</th><th>Invited</th><th>Accepted</th><th>Accept rate</th></tr>
+  
+  
+  <tr>
+    <td>decision_maker</td><td>3</td><td>1</td>
+    <td>33%</td>
+  </tr>
+  
+  
+  <tr>
+    <td>practitioner</td><td>2</td><td>1</td>
+    <td>50%</td>
+  </tr>
+  
+</table>
+
+<h2>HITL summary</h2>
+<p>
+  Auto-approved: 3 &middot;
+  Human-approved: 7<br>
+  Edited: 1 &middot; Rejected: 0
+</p>
+<table>
+  <tr><th>Route code</th><th>Count</th></tr>
+  
+  <tr><td><code>score_band</code></td><td>4</td></tr>
+  
+  <tr><td><code>score_ok</code></td><td>3</td></tr>
+  
+  <tr><td><code>sensitive_content</code></td><td>3</td></tr>
+  
+</table>
+
+<h2>Accounts</h2>
+<table>
+  <tr><th>Account</th><th>Score</th><th>Status</th><th>Reason</th></tr>
+  
+  <tr><td>Northwind Payments</td><td>96</td><td>QUALIFIED</td><td class="muted">Account score 96 >= threshold 60 (evidence=55.7, icp=25, why_now=15)</td></tr>
+  
+  <tr><td>Lumen Logistics</td><td>76</td><td>QUALIFIED</td><td class="muted">Account score 76 >= threshold 60 (evidence=41.3, icp=20, why_now=15)</td></tr>
+  
+  <tr><td>Orbit Media</td><td>23</td><td>REJECTED</td><td class="muted">Account score 23 below threshold 60</td></tr>
+  
+  <tr><td>Kestrel Games</td><td>78</td><td>QUALIFIED</td><td class="muted">Account score 78 >= threshold 60 (evidence=43.3, icp=20, why_now=15)</td></tr>
+  
+  <tr><td>Pinecrest Analytics</td><td>0</td><td>REJECTED</td><td class="muted">Gate: no technology evidence</td></tr>
+  
+  <tr><td>Quanta Retail</td><td>0</td><td>SUPPRESSED</td><td class="muted">Existing ScyllaDB customer domain</td></tr>
+  
+  <tr><td>DataStax</td><td>0</td><td>SUPPRESSED</td><td class="muted">Competitor domain</td></tr>
+  
+  <tr><td>Brightwave AI</td><td>61</td><td>QUALIFIED</td><td class="muted">Account score 61 >= threshold 60 (evidence=30.9, icp=15, why_now=15)</td></tr>
+  
+  <tr><td>Sprocket Labs</td><td>0</td><td>REJECTED</td><td class="muted">Gate: 12 employees, below ICP min_employees=100</td></tr>
+  
+</table>
+
+<h2>Leads</h2>
+<table>
+  <tr><th>Lead</th><th>Company</th><th>Persona</th><th>Status</th><th>Reason</th></tr>
+  
+  
+  <tr>
+    <td>Maya Rosen</td>
+    <td>Northwind Payments</td>
+    <td>decision_maker</td>
+    <td>EMAILED</td>
+    <td class="muted">warm email dispatched (dry-run)</td>
+  </tr>
+  
+  
+  <tr>
+    <td>Tom Hale</td>
+    <td>Northwind Payments</td>
+    <td>practitioner</td>
+    <td>EMAILED</td>
+    <td class="muted">cold email dispatched (dry-run)</td>
+  </tr>
+  
+  
+  <tr>
+    <td>Ana Costa</td>
+    <td>Northwind Payments</td>
+    <td>practitioner</td>
+    <td>DEPRIORITIZED</td>
+    <td class="muted">Qualified but rank 3 exceeds the remaining cap (2/2 slots open - 0 already contacted)</td>
+  </tr>
+  
+  
+  <tr>
+    <td>Ruth Green</td>
+    <td>Northwind Payments</td>
+    <td>-</td>
+    <td>REJECTED</td>
+    <td class="muted">Gate: excluded department (HR)</td>
+  </tr>
+  
+  
+  <tr>
+    <td>Joris de Vries</td>
+    <td>Lumen Logistics</td>
+    <td>decision_maker</td>
+    <td>EMAILED</td>
+    <td class="muted">cold email dispatched (dry-run)</td>
+  </tr>
+  
+  
+  <tr>
+    <td>Rita Okafor</td>
+    <td>Lumen Logistics</td>
+    <td>-</td>
+    <td>SUPPRESSED</td>
+    <td class="muted">Email is on the opt-out list</td>
+  </tr>
+  
+  
+  <tr>
+    <td>Jason Park</td>
+    <td>Orbit Media</td>
+    <td>-</td>
+    <td>REJECTED</td>
+    <td class="muted">Account not qualified: Account score 23 below threshold 60</td>
+  </tr>
+  
+  
+  <tr>
+    <td>Lior Ben-David</td>
+    <td>Kestrel Games</td>
+    <td>practitioner</td>
+    <td>EMAILED</td>
+    <td class="muted">warm email dispatched (dry-run)</td>
+  </tr>
+  
+  
+  <tr>
+    <td>Cassandra Lee</td>
+    <td>Pinecrest Analytics</td>
+    <td>-</td>
+    <td>REJECTED</td>
+    <td class="muted">Account not qualified: Gate: no technology evidence</td>
+  </tr>
+  
+  
+  <tr>
+    <td>Felix Braun</td>
+    <td>Quanta Retail</td>
+    <td>-</td>
+    <td>SUPPRESSED</td>
+    <td class="muted">Account suppressed: Existing ScyllaDB customer domain</td>
+  </tr>
+  
+  
+  <tr>
+    <td>Priya Nair</td>
+    <td>DataStax</td>
+    <td>-</td>
+    <td>SUPPRESSED</td>
+    <td class="muted">Account suppressed: Competitor domain</td>
+  </tr>
+  
+  
+  <tr>
+    <td>Dana Weiss</td>
+    <td>Brightwave AI</td>
+    <td>decision_maker</td>
+    <td>EMAILED</td>
+    <td class="muted">cold email dispatched (dry-run)</td>
+  </tr>
+  
+  
+  <tr>
+    <td>Nuno Alves</td>
+    <td>Sprocket Labs</td>
+    <td>-</td>
+    <td>REJECTED</td>
+    <td class="muted">Account not qualified: Gate: 12 employees, below ICP min_employees=100</td>
+  </tr>
+  
+</table>
+
+<h2>Sent messages</h2>
+
+<h3>msg#1 - Maya Rosen @ Northwind Payments (linkedin/invite, route=auto)</h3>
+
+<table>
+  <tr><th>Evidence</th><th>Type</th><th>Source</th><th>Date</th></tr>
+  
+  <tr><td>s01</td><td>customer_reference</td><td>https://competitor.example/customers/northwind-payments</td><td>2025-11-12</td></tr>
+  
+</table>
+
+
+<h3>msg#2 - Tom Hale @ Northwind Payments (linkedin/invite, route=auto)</h3>
+
+<table>
+  <tr><th>Evidence</th><th>Type</th><th>Source</th><th>Date</th></tr>
+  
+  <tr><td>s02</td><td>job_post</td><td>https://jobs.example/northwind/staff-sre-data</td><td>2026-09-20</td></tr>
+  
+</table>
+
+
+<h3>msg#3 - Joris de Vries @ Lumen Logistics (linkedin/invite, route=human)</h3>
+
+<table>
+  <tr><th>Evidence</th><th>Type</th><th>Source</th><th>Date</th></tr>
+  
+  <tr><td>s03</td><td>job_post</td><td>https://jobs.example/lumen/platform-engineer</td><td>2026-08-05</td></tr>
+  
+</table>
+
+
+<h3>msg#4 - Lior Ben-David @ Kestrel Games (linkedin/invite, route=human)</h3>
+
+<table>
+  <tr><th>Evidence</th><th>Type</th><th>Source</th><th>Date</th></tr>
+  
+  <tr><td>s06</td><td>conference_talk</td><td>https://conf.example/2026/talks/kestrel-leaderboards</td><td>2026-05-14</td></tr>
+  
+</table>
+
+
+<h3>msg#5 - Dana Weiss @ Brightwave AI (linkedin/invite, route=human)</h3>
+
+<table>
+  <tr><th>Evidence</th><th>Type</th><th>Source</th><th>Date</th></tr>
+  
+  <tr><td>champ_p12_a01</td><td>champion_move</td><td>https://competitor.example/customers/northwind-payments</td><td>2026-07-01</td></tr>
+  
+</table>
+
+
+<h3>msg#6 - Maya Rosen @ Northwind Payments (email/warm, route=human)</h3>
+
+<table>
+  <tr><th>Evidence</th><th>Type</th><th>Source</th><th>Date</th></tr>
+  
+  <tr><td>s01</td><td>customer_reference</td><td>https://competitor.example/customers/northwind-payments</td><td>2025-11-12</td></tr>
+  
+</table>
+
+
+<h3>msg#7 - Lior Ben-David @ Kestrel Games (email/warm, route=human)</h3>
+
+<table>
+  <tr><th>Evidence</th><th>Type</th><th>Source</th><th>Date</th></tr>
+  
+  <tr><td>s06</td><td>conference_talk</td><td>https://conf.example/2026/talks/kestrel-leaderboards</td><td>2026-05-14</td></tr>
+  
+</table>
+
+
+<h3>msg#8 - Tom Hale @ Northwind Payments (email/cold, route=auto)</h3>
+
+<table>
+  <tr><th>Evidence</th><th>Type</th><th>Source</th><th>Date</th></tr>
+  
+  <tr><td>s02</td><td>job_post</td><td>https://jobs.example/northwind/staff-sre-data</td><td>2026-09-20</td></tr>
+  
+</table>
+
+
+<h3>msg#9 - Joris de Vries @ Lumen Logistics (email/cold, route=human)</h3>
+
+<table>
+  <tr><th>Evidence</th><th>Type</th><th>Source</th><th>Date</th></tr>
+  
+  <tr><td>s03</td><td>job_post</td><td>https://jobs.example/lumen/platform-engineer</td><td>2026-08-05</td></tr>
+  
+</table>
+
+
+<h3>msg#10 - Dana Weiss @ Brightwave AI (email/cold, route=human)</h3>
+
+<table>
+  <tr><th>Evidence</th><th>Type</th><th>Source</th><th>Date</th></tr>
+  
+  <tr><td>champ_p12_a01</td><td>champion_move</td><td>https://competitor.example/customers/northwind-payments</td><td>2026-07-01</td></tr>
+  
+</table>
+
+
+
+<h2>Run metadata</h2>
+<p>
+  Runs: 2<br>
+  LLM calls: 20 (51124 in / 6636 out tokens)<br>
+  Models: claude-haiku-5-5, claude-opus-5-5<br>
+  Prompt versions: extract_signals.v4, personalize.v7
+</p>
+
+</body>
+</html>

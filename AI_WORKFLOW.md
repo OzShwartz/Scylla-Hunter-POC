@@ -4,6 +4,20 @@ This log records how the project was built with Claude Code: the significant pro
 
 Format per entry: prompt summary → what Claude did → corrections (if any) → decisions made.
 
+## Highlights: where human review caught what the automated checks missed
+
+The project's own thesis is that AI-written outreach needs a human in the loop (CLAUDE.md, PRD §9.6). These are the cases that actually proved it - each one passed every automated check that existed at the time, and a human caught it anyway. Full detail in the chronological log below; this table is the index.
+
+| # | Case | What the automated checks missed | How it was caught | Entry |
+|---|---|---|---|---|
+| 1 | API key in the wrong file | Nothing automated watches `.env.example` for real secrets - it's a committed placeholder by design | `git status` before staging showed it modified; read the diff before any `git add` | Near-miss |
+| 2 | Sender hallucination | Schema validation and grounding only check *evidence* claims, not claims about the sender | Oz read the draft and caught "I'm an engineer at ScyllaDB working on similar latency problems" - a fact never given to the model | #5/#6 |
+| 3 | Mislabeled quote | Grounding only checks that a quoted string is a verbatim substring of the source text - it can't tell a direct quote from a relabeled description | Oz, the recipient's peer, would have spotted it immediately: the quoted phrase was the talk's *description*, not its *title* | #7 |
+| 4 | Auto-routing of the riskiest message | Account score measures lead quality, not message risk - nothing before this linked the two | Oz noticed the one auto-sent draft (96 score) was also the most commercially sensitive of the batch (IBM acquisition + renewal framing) | #7 |
+| 5 | Replay files deleted by a bulk `rm` | No check prevents deleting committed, tracked files from inside a git-tracked directory | `git status` after the delete showed committed extraction replays as modified/deleted where only personalization files should have changed | #7 |
+| 6 | A context fact applied to the wrong account | `cf_ibm`'s only guard was a persona allow-list - nothing checked *whose* stack the fact was actually describing | Oz noticed Dana's email implied Brightwave ran a DataStax product, when her only evidence was a champion_move signal describing her *former* employer | #12 |
+| 7 | Near-duplicate emails within one account | The first fix (opening-sentence + 5-gram wording check) passed two emails that led with the same facts in different words; the second version of the *same* fix passed a draft that cited a sibling's primary evidence as a secondary source | Oz read Maya's and Tom's emails side by side and noticed the repeated headline facts twice, each time after a check had already been added and had already passed | #12/#13 |
+
 ---
 
 ## Entry #1 — 2026-10-10 — Kickoff: inspect, plan, do not code yet
