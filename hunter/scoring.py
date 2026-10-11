@@ -146,7 +146,9 @@ def score_accounts(conn: sqlite3.Connection, config: Config, as_of: date) -> Non
     for account_row in db.list_accounts(conn):
         result = score_account(conn, account_row, config, as_of)
         people_query = None
-        if result.status == "QUALIFIED":
+        if result.status in ("QUALIFIED", "NEEDS_ENRICHMENT"):
+            # FR-2/FR-4: a live account has no firmographics yet, but the people-search
+            # request can still be generated from its name/domain alone.
             people_query = generate_people_query(account_row, config)
         db.update_account_score(
             conn,

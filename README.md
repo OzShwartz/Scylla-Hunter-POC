@@ -4,23 +4,24 @@ A small, runnable PoC for an AI-driven competitor-displacement hunter: it finds 
 
 Full spec: **[PRD.md](PRD.md)**. Build log: **[AI_WORKFLOW.md](AI_WORKFLOW.md)**.
 
-## Quickstart (no keys, ~2 minutes)
+## Quickstart (no keys, ~2 minutes, Python 3.11+)
 
 ```bash
-git clone <this-repo> && cd scylla-hunter
+git clone https://github.com/OzShwartz/Scylla-Scount-POC.git && cd Scylla-Scount-POC
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python -m hunter reset
 python -m hunter run                 # 5 qualified leads; 2 invites auto-sent, 3 pending
 python -m hunter review              # see pending drafts with evidence and routing reason
 python -m hunter approve --all       # approves the score-band ones; skips anything content-sensitive
 python -m hunter simulate --days 7   # 2 accept -> warm email; 3 don't -> cold email
-python -m hunter review              # several of these are tagged [SENSITIVE CONTENT]
-python -m hunter approve --all       # skips the flagged ones again, with their ids
-python -m hunter approve <msg_id>    # read each flagged one, then approve individually
+python -m hunter review              # msg#6, #9, #10 are tagged [SENSITIVE CONTENT]
+python -m hunter approve --all       # skips #6/#9/#10 again, with their ids
+python -m hunter approve 6 && python -m hunter approve 9 && python -m hunter approve 10
 python -m hunter report --html       # examples/report.md and examples/report.html
 ```
 
-Everything runs against a committed **replay set** (`data/llm_replay/`) - real Claude responses recorded once, replayed deterministically. `--llm live` plus `ANTHROPIC_API_KEY` in `.env` re-records them; the reviewer never needs a key.
+These message ids are deterministic - replay mode makes the same drafts every time, in the same order. Everything above runs against a committed **replay set** (`data/llm_replay/`): real Claude responses recorded once, replayed deterministically. `--llm live` plus `ANTHROPIC_API_KEY` in `.env` re-records them; the reviewer never needs a key.
 
 ## The problem, and how I read it
 
@@ -34,6 +35,17 @@ ScyllaDB is CQL/Cassandra-compatible, so a team running DataStax or Cassandra ca
 
 **Code decides what happens. The LLM decides only how it's worded. n8n (production) decides when.** Qualification, scoring, routing and triggers are deterministic Python - testable, explainable, free to re-run. The LLM is called in exactly two places (`hunter/extract.py`, `hunter/personalize.py`), both through `hunter/llm.py`. More diagrams (DFD, ERD, lifecycles) in `docs/diagrams/` and PRD §14.
 
+## Data
+
+Every company and person is **fictional** - `.example` domains, invented names - built to model real source *types* (customer-reference pages, job posts, conference talks, technographics, reviews, GitHub code search). `data/fixtures.json` also encodes deliberate edge cases the pipeline has to get right, each exercised by a test:
+
+- a person named **Cassandra** (Pinecrest Analytics) - a keyword false positive, not a technology
+- a **stale** 2021 case study (Orbit Media) - recency decay should sink it
+- a **champion move**: someone quoted at one account joins another (Brightwave AI)
+- a **competitor employee** (DataStax) and an **existing ScyllaDB customer** (Quanta Retail) - both suppressed
+- an **opted-out** contact (Lumen Logistics) - suppressed permanently
+- a **too-small** company (Sprocket Labs, 12 employees) - rejected by the ICP gate
+
 ## One lead, end to end: Maya Rosen
 
 Real output from `examples/run_log.txt` - nothing in this section is invented.
@@ -42,19 +54,46 @@ Real output from `examples/run_log.txt` - nothing in this section is invented.
 2. **Score breakdown.** `evidence=55.7, icp=25, why_now=15` → **account score 96** (≥ 80 auto-approve threshold).
 3. **Invite** (auto-approved, sent): *"Hi Maya, I'm Oz, GTM Engineer at ScyllaDB. I saw that Northwind Payments runs fraud scoring across multiple regions at 40k transactions per second, with tight read-latency requirements. I'd be glad to connect."*
 4. **Accepted event** (`hunter simulate --days 7`, scripted day 2): lead status `INVITED` → `ACCEPTED`.
-5. **Warm email drafted:** opens "Hi Maya, thanks for connecting," cites the same evidence, adds one value prop, and - because the account's own evidence is Astra DB usage - mentions the IBM/DataStax acquisition as one clause after the main argument, never the opener.
-6. **Route: forced to human review.** Score alone (96) would auto-approve. The draft's content - a competitor product name and the acquisition - overrides that unconditionally (`hitl.determine_route`, code `sensitive_content`). This is the project's central finding: **account score measures lead quality, not message risk**, and the two are independent. `hunter review` tags it `[SENSITIVE CONTENT]`; `approve --all` skips it; a human reads it and approves (or doesn't) individually.
+5. **Warm email drafted** - the full text, unedited:
+
+   > Hi Maya, thanks for connecting.
+   >
+   > I saw that Northwind Payments runs fraud scoring on Astra DB, with single-digit millisecond reads across three regions at 40k transactions per second. That is a demanding profile to keep cost-efficient as volume grows.
+   >
+   > ScyllaDB is built for that kind of workload. Higher throughput per node typically means fewer nodes and lower infrastructure cost. With DataStax now part of IBM, this may also be a reasonable moment to review options.
+   >
+   > Would you be open to comparing notes on how your fraud-scoring cluster is sized today?
+   >
+   > Oz
+   > GTM Engineer, ScyllaDB
+   >
+   > Reply STOP to opt out.
+
+6. **Route: forced to human review.** Score alone (96) would auto-approve. The draft's content - the competitor product name and the acquisition clause above - overrides that unconditionally (`hitl.determine_route`, code `sensitive_content`). This is the project's central finding: **account score measures lead quality, not message risk**, and the two are independent. `hunter review` tags it `[SENSITIVE CONTENT]`; `approve --all` skips it; a human reads it and approves (or doesn't) individually.
+
+## How quality is measured
+
+`hunter eval` scores every run against fixture `_expected` values - never read by the pipeline itself, only by the evaluator: **32/32** extraction fields, **13/13** lead selections, **10/10** grounded messages. **141 automated tests** cover scoring, gates, validators, HITL routing, triggers, dispatch, the report, and the GitHub source. Grounding is enforced in code, not just prompted: every `evidence_quote` must be a verbatim substring of the source text, every cited evidence id must exist and belong to the lead's account, and every named person must actually appear in the source.
 
 ## Key decisions
 
 | Decision | Why |
 |---|---|
-| Account-first discovery, ending in a LinkedIn profile URL | Answers "identify users on LinkedIn" without scraping or automating LinkedIn, which breaches its ToS (Proxycurl's shutdown, Jan 2025, is the cautionary case) |
+| Account-first discovery, ending in a LinkedIn profile URL | Answers "identify users on LinkedIn" without scraping or automating LinkedIn, which breaches its ToS - LinkedIn sued data provider Proxycurl in Jan 2025, which shut down that July |
 | Deterministic scoring, selection, routing and triggers | Explainable and testable; an SDR or GTM lead can audit *why*, not just *what* |
 | Grounding enforced in code, not just prompted | A model will still occasionally mislabel a quote or restate a fact loosely - verbatim-substring checks and evidence-existence checks catch what a prompt instruction alone doesn't |
-| Content-sensitive HITL override | Found empirically (Phase 2): the highest-scoring account produced the most commercially sensitive draft and auto-sent anyway - score and risk are orthogonal, so routing now checks both |
+| Content-sensitive HITL override | Found empirically (Phase 2): the highest-scoring account produced the most commercially sensitive draft and, on score alone, would have auto-sent - score and risk are orthogonal, so routing now checks both |
 | Replay mode as the default | The reviewer runs the whole thing in minutes, with no key, deterministically - see `hunter/llm.py` |
 | No LinkedIn scraping or automation, anywhere | Legal/ToS risk is real and recent; invites are "sent" only to console + `outbox.jsonl` |
+
+## Requirements → where
+
+| The assignment asked for | Where it's met |
+|---|---|
+| Identify relevant users on LinkedIn | Account-first discovery → people lookup, ending in a LinkedIn profile URL per lead (`hunter/scoring.py`, `hunter/sources.py`) |
+| AI-personalized invite + follow-up email | `hunter/personalize.py`, via Claude (`hunter/llm.py`), grounded and validated |
+| Trigger logic, with a dry run | R1-R3 in `hunter/triggers.py`: qualified → invite; accepted → warm email; no reply in 7 days → cold email. Dry-run to console + `outbox.jsonl` (`hunter/dispatch.py`) |
+| A report of leads gathered/selected/sent, kept in a database | SQLite, 6 tables (`hunter/db.py`); `hunter report --html` (`hunter/report.py`) |
 
 ## What I deliberately left out, and why
 
@@ -78,7 +117,14 @@ Full version: **[PRD.md §14.5](PRD.md#145-infrastructure)**, **[§20](PRD.md#20
 
 ## GitHub live source (FR-2)
 
-> **Placeholder - filling this in Monday.** `--source github` with a `GITHUB_TOKEN` runs real code-search queries and maps matching repos to accounts (§5.2, FR-2); this section will show real discovered-account output once that pass is done.
+`python -m hunter run --source github`, with `GITHUB_TOKEN` in `.env`, runs the configured code-search queries (`com.datastax.oss`, `cassandra-driver`, `astrapy`) against the real GitHub API and maps matching organization-owned repos to accounts. Real output from a live run:
+
+```
+Live discovered accounts (github): 10 (gh_sky-uk, gh_stargate, gh_thelastpickle, gh_quintoandar,
+  gh_alibaba, gh_neurodata, gh_Dataherald, gh_rocketride-org, gh_AI-Northstar-Tech, gh_deepset-ai)
+```
+
+Each becomes an account with no firmographics (`employees: null`) → status `NEEDS_ENRICHMENT`, plus a generated people-search query (17 target titles) - neither is scored or contacted; both need a human to enrich and confirm before anything moves forward. A repo whose description also mentions "scylla" is excluded outright (already a prospect, not a target) - none did in this run. Two names above are a useful reminder that raw search hits need a human filter before any of this is a real lead: `stargate` is DataStax's own project, and `thelastpickle` is a known Cassandra consultancy - exactly the kind of false positive `NEEDS_ENRICHMENT` exists to catch before outreach, not after. Without a token, the command explains that and runs the fixtures unaffected - see `tests/test_sources.py`.
 
 ## How this was built
 

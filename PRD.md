@@ -343,7 +343,7 @@ account_score   = round(evidence_points + icp_points + why_now_points)      (max
 
 | Account | Signals (value after decay × confidence) | Evidence | ICP | Why now | **Score** | Result |
 |---|---|---|---|---|---|---|
-| Northwind Payments | customer_reference 26.3 · job_post 29.3 | 55.6 | 25 | 15 | **96** | QUALIFIED → auto |
+| Northwind Payments | customer_reference 26.3 · job_post 29.3 | 55.7 | 25 | 15 | **96** | QUALIFIED → auto |
 | Kestrel Games | conference_talk 29.1 · tech_stack 14.3 | 43.4 | 20 | 15 | **78** | QUALIFIED → review |
 | Lumen Logistics | job_post 27.7 · tech_stack 13.6 | 41.3 | 20 | 15 | **76** | QUALIFIED → review |
 | Brightwave AI | champion_move 30.9 | 30.9 | 15 | 15 | **61** | QUALIFIED → review |
@@ -352,6 +352,8 @@ account_score   = round(evidence_points + icp_points + why_now_points)      (max
 | Sprocket Labs | review 12.9 | — | — | — | — | REJECTED (12 employees) |
 | Quanta Retail | customer_reference 18.8 | — | — | — | — | SUPPRESSED (customer) |
 | DataStax | — | — | — | — | — | SUPPRESSED (competitor) |
+
+> The Evidence column sums the two signal values at full precision and rounds only once for display (`f"{evidence_points:.1f}"` in `scoring.py`), matching the code exactly - confirmed by direct recomputation (`scoring.compute_signal_value`): Northwind's 26.3486... + 29.3246... = 55.67..., which displays as **55.7**, not the 55.6 an earlier draft of this table got by rounding each signal value to one decimal before summing.
 
 ### 9.5 Person ranking
 

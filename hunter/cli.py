@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime
 
 import typer
@@ -37,8 +38,9 @@ def run(
     config = load_config()
     llm_mode = llm or config.llm.mode
 
-    if source != "fixtures":
-        typer.echo(f"--source {source} is not implemented yet (PRD §15 Phase 8 / FR-2). Using fixtures.")
+    if source not in ("fixtures", "github", "all"):
+        typer.echo(f"Unknown --source {source!r}. Supported: fixtures|github|all. Using fixtures.")
+        source = "fixtures"
 
     conn = db.connect(config.runtime.db_path)
     db.init_db(conn)
@@ -56,6 +58,25 @@ def run(
         )
 
     typer.echo(f"Loaded {len(fixtures.accounts)} accounts, {len(fixtures.raw_signals)} raw signals, {len(fixtures.people)} people.")
+
+    if source in ("github", "all"):
+        token = os.environ.get("GITHUB_TOKEN")
+        if not token:
+            typer.echo(
+                "--source github: GITHUB_TOKEN is not set in .env - skipping the live GitHub source "
+                "(see .env.example / PRD §5.2, FR-2). The fixture run is unaffected."
+            )
+        else:
+            try:
+                github_account_ids = sources.run_github_source(
+                    conn, config.github_source, token=token, as_of=config.as_of
+                )
+                typer.echo(
+                    f"Live discovered accounts (github): {len(github_account_ids)}"
+                    + (f" ({', '.join(github_account_ids)})" if github_account_ids else "")
+                )
+            except sources.GitHubSourceError as e:
+                typer.echo(f"--source github: {e}", err=True)
 
     try:
         stats = extract_mod.extract_signals(conn, fixtures, config, llm_mode=llm_mode)

@@ -35,6 +35,7 @@ class ReportData:
     accounts: list[sqlite3.Row]
     leads: list[sqlite3.Row]
     sent_messages: list[dict]
+    live_accounts: list[dict]
     run_meta: dict
 
 
@@ -159,6 +160,28 @@ def run_metadata(conn: sqlite3.Connection) -> dict:
     }
 
 
+def live_discovered_accounts(conn: sqlite3.Connection) -> list[dict]:
+    """FR-10: accounts found by a live source (FR-2's GitHub search), not the
+    fixtures - empty on a fixtures-only run."""
+    out = []
+    for a in db.list_accounts(conn):
+        if a["source"] == "fixtures":
+            continue
+        query = json.loads(a["people_query"]) if a["people_query"] else None
+        target_title_count = (
+            len(query["target_titles"]["decision_maker"]) + len(query["target_titles"]["practitioner"])
+            if query else 0
+        )
+        out.append(
+            {
+                "name": a["name"], "source": a["source"], "status": a["status"],
+                "domain": query["company_domain"] if query else a["domain"],
+                "target_title_count": target_title_count,
+            }
+        )
+    return out
+
+
 def build_report(conn: sqlite3.Connection, config: Config) -> ReportData:
     return ReportData(
         account_funnel=compute_account_funnel(conn),
@@ -168,6 +191,7 @@ def build_report(conn: sqlite3.Connection, config: Config) -> ReportData:
         accounts=db.list_accounts(conn),
         leads=db.list_leads(conn),
         sent_messages=sent_messages_detail(conn),
+        live_accounts=live_discovered_accounts(conn),
         run_meta=run_metadata(conn),
     )
 
@@ -203,6 +227,11 @@ def render_markdown(data: ReportData) -> str:
     lines += ["", "## Accounts", "", "| Account | Score | Status | Reason |", "|---|---|---|---|"]
     for a in data.accounts:
         lines.append(f"| {a['name']} | {a['account_score']} | {a['status']} | {a['reason']} |")
+
+    if data.live_accounts:
+        lines += ["", "## Live discovered accounts", "", "| Account | Source | Status | People query |", "|---|---|---|---|"]
+        for a in data.live_accounts:
+            lines.append(f"| {a['name']} | {a['source']} | {a['status']} | `{a['domain']}`, {a['target_title_count']} target titles |")
 
     lines += ["", "## Leads", "", "| Lead | Company | Persona | Status | Reason |", "|---|---|---|---|---|"]
     for lead in data.leads:

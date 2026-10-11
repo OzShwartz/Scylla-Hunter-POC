@@ -71,6 +71,16 @@
   {% endfor %}
 </table>
 
+{% if data.live_accounts %}
+<h2>Live discovered accounts</h2>
+<table>
+  <tr><th>Account</th><th>Source</th><th>Status</th><th>People query</th></tr>
+  {% for a in data.live_accounts %}
+  <tr><td>{{ a.name }}</td><td>{{ a.source }}</td><td>{{ a.status }}</td><td><code>{{ a.domain }}</code>, {{ a.target_title_count }} target titles</td></tr>
+  {% endfor %}
+</table>
+{% endif %}
+
 <h2>Leads</h2>
 <table>
   <tr><th>Lead</th><th>Company</th><th>Persona</th><th>Status</th><th>Reason</th></tr>
