@@ -1,7 +1,0 @@
-{
-  "text": "{\"subject\":\"Cassandra tail latency on the leaderboard cluster\",\"body\":\"Hi Lior,\\n\\nThanks for connecting. Your talk on running 60 self-managed Apache Cassandra nodes for the Kestrel Games leaderboard cluster stuck with me, especially the tail latency and GC/compaction tuning side.\\n\\nThat's the problem ScyllaDB was built around: a shard-per-core C++ architecture with no JVM garbage-collection pauses, so p99 latency stays predictable without the GC tuning work.\\n\\nIf it's useful, I'm happy to share how that design handles a leaderboard-style workload. Just let me know.\\n\\nOz\\nGTM Engineer, ScyllaDB\\n\\nReply STOP to opt out.\",\"evidence_ids\":[\"s06\"],\"value_prop_ids\":[\"vp_latency\"],\"context_fact_ids\":[]}",
-  "tokens_in": 2510,
-  "tokens_out": 304,
-  "model": "claude-opus-5-5",
-  "prompt_version": "personalize.v5"
-}

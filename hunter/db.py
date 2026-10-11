@@ -479,6 +479,20 @@ def list_messages_for_lead(conn: sqlite3.Connection, lead_id: str) -> list[sqlit
     return conn.execute("SELECT * FROM messages WHERE lead_id = ? ORDER BY id", (lead_id,)).fetchall()
 
 
+def list_messages_for_account(conn: sqlite3.Connection, account_id: str, *, exclude_lead_id: str | None = None) -> list[sqlite3.Row]:
+    """Every message drafted for any lead at this account - used to keep
+    same-account messages from reading like near-duplicates (PRD §11.5)."""
+    if exclude_lead_id is None:
+        return conn.execute(
+            "SELECT m.* FROM messages m JOIN leads l ON m.lead_id = l.id WHERE l.account_id = ? ORDER BY m.id",
+            (account_id,),
+        ).fetchall()
+    return conn.execute(
+        "SELECT m.* FROM messages m JOIN leads l ON m.lead_id = l.id WHERE l.account_id = ? AND m.lead_id != ? ORDER BY m.id",
+        (account_id, exclude_lead_id),
+    ).fetchall()
+
+
 # ---------------------------------------------------------------------------
 # events
 # ---------------------------------------------------------------------------

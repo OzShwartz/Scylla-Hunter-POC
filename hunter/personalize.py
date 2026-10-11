@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -46,6 +47,27 @@ def _render_value_props_block(persona: str, config: Config) -> str:
     return "\n".join(f"- {vp_id}: {by_id[vp_id]}" for vp_id in allowed_ids if vp_id in by_id)
 
 
+def _first_sentence(text: str) -> str:
+    return re.split(r"(?<=[.!?])\s+", text.strip(), maxsplit=1)[0]
+
+
+def _render_other_account_messages_block(conn: sqlite3.Connection, account_id: str, exclude_lead_id: str) -> str:
+    """PRD §11.5: colleagues forward these to each other - a message drafted
+    for one lead at an account the model has already drafted for shows the
+    opening and cited evidence of each sibling, so the model can vary its own
+    opening and lead with different evidence (validators.validate_distinct_from_account_siblings
+    is the deterministic backstop for this same rule).
+    """
+    siblings = db.list_messages_for_account(conn, account_id, exclude_lead_id=exclude_lead_id)
+    if not siblings:
+        return "(none)"
+    lines = []
+    for m in siblings:
+        evidence_ids = ", ".join(json.loads(m["evidence_ids"])) or "none"
+        lines.append(f"- opens with: \"{_first_sentence(m['body'])}\" (cited evidence: {evidence_ids})")
+    return "\n".join(lines)
+
+
 def _render_context_facts_block(config: Config, persona: str) -> str:
     """Only offers a context fact the lead's persona is allowed (PRD §11.5):
     cf_ibm is decision_maker-only, so a practitioner is never even given it to
@@ -75,6 +97,7 @@ def _render_system(spec: PromptSpec, config: Config) -> str:
 def _render_user(
     spec: PromptSpec,
     *,
+    conn: sqlite3.Connection,
     lead: sqlite3.Row,
     account: sqlite3.Row,
     evidence_signals: list[sqlite3.Row],
@@ -92,6 +115,7 @@ def _render_user(
         evidence_block=_render_evidence_block(evidence_signals),
         value_props_block=_render_value_props_block(lead["persona"], config),
         context_facts_block=_render_context_facts_block(config, lead["persona"]),
+        other_account_messages_block=_render_other_account_messages_block(conn, account["id"], lead["id"]),
     )
 
 
@@ -111,8 +135,11 @@ def draft_message(
     spec = load_prompt_spec(PROMPT_PATH)
     system = _render_system(spec, config)
     evidence_signals = evidence_signals_for_account(conn, account["id"])
+    other_message_bodies = [
+        m["body"] for m in db.list_messages_for_account(conn, account["id"], exclude_lead_id=lead["id"])
+    ]
     user = _render_user(
-        spec, lead=lead, account=account, evidence_signals=evidence_signals,
+        spec, conn=conn, lead=lead, account=account, evidence_signals=evidence_signals,
         config=config, variant=variant, previous_interaction=previous_interaction,
     )
 
@@ -143,6 +170,7 @@ def draft_message(
         return validators.validate_message(
             draft, variant=variant, persona=lead["persona"], first_name=lead["first_name"],
             company_name=account["name"], evidence_signals=evidence_signals, config=config,
+            other_message_bodies=other_message_bodies,
         )
 
     draft, model_used, errors = call_once(user)

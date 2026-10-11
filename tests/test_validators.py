@@ -280,3 +280,85 @@ def test_no_ibm_fact_cited_skips_opening_check():
     draft = DraftResult(subject="S", body="IBM announced something unrelated at the very start here.", evidence_ids=["s01"])
     errors = validators.validate_ibm_mention_not_opening(draft)
     assert errors == []
+
+
+def test_ibm_fact_from_champion_move_evidence_only_fails():
+    """Dana's case: Brightwave's only signal is a champion_move describing
+    Northwind's (her former employer's) stack, not Brightwave's own."""
+    evidence = [{"id": "champ_p12_a01", "type": "champion_move", "confidence": "high", "uses_competitor": True}]
+    draft = DraftResult(body="b", evidence_ids=["champ_p12_a01"], context_fact_ids=["cf_ibm"])
+    errors = validators.validate_ibm_fact_requires_competitor_evidence(draft, evidence)
+    assert any("champion_move" in e for e in errors)
+
+
+def test_ibm_fact_with_direct_account_evidence_passes():
+    evidence = [{"id": "s01", "type": "customer_reference", "confidence": "high", "uses_competitor": True}]
+    draft = DraftResult(body="b", evidence_ids=["s01"], context_fact_ids=["cf_ibm"])
+    errors = validators.validate_ibm_fact_requires_competitor_evidence(draft, evidence)
+    assert errors == []
+
+
+def test_no_ibm_fact_cited_skips_direct_evidence_check():
+    draft = DraftResult(body="b", evidence_ids=[], context_fact_ids=[])
+    errors = validators.validate_ibm_fact_requires_competitor_evidence(draft, [])
+    assert errors == []
+
+
+def test_identical_opening_sentence_fails():
+    sibling = "I wanted to share something relevant to your database setup. Lots of different content follows for Tom."
+    draft = DraftResult(
+        body="I wanted to share something relevant to your database setup. Completely different content for Maya."
+    )
+    errors = validators.validate_distinct_from_account_siblings(draft, [sibling])
+    assert any("identical" in e for e in errors)
+
+
+def test_high_five_gram_overlap_fails():
+    shared = "the shard per core architecture avoids garbage collection pauses entirely for predictable latency"
+    sibling = f"Hi Tom, {shared} under load. Hope that helps."
+    draft = DraftResult(body=f"Hi Maya, {shared} under load. Let me know.")
+    errors = validators.validate_distinct_from_account_siblings(draft, [sibling])
+    assert any("5-word phrases" in e for e in errors)
+
+
+def test_distinct_same_account_messages_pass():
+    sibling = "Hi Tom, I caught your talk on leaderboard tail latency and wanted to share a quick note."
+    draft = DraftResult(body="Hi Maya, your team's capacity planning work for the multi-region layer caught my eye.")
+    errors = validators.validate_distinct_from_account_siblings(draft, [sibling])
+    assert errors == []
+
+
+def test_no_siblings_skips_duplicate_check():
+    draft = DraftResult(body="Hi Maya, following up on fraud scoring at Northwind.")
+    errors = validators.validate_distinct_from_account_siblings(draft, [])
+    assert errors == []
+
+
+def test_email_without_sender_identity_fails(config):
+    draft = DraftResult(
+        subject="S", body="Hi Maya, thanks for connecting. Let's compare notes. Reply STOP to opt out."
+    )
+    errors = validators.validate_sender_sign_off(draft, "warm", config)
+    assert any("never states" in e for e in errors)
+
+
+def test_email_with_sender_identity_before_opt_out_passes(config):
+    draft = DraftResult(
+        subject="S", body="Hi Maya, thanks for connecting.\n\nOz\nGTM Engineer, ScyllaDB\n\nReply STOP to opt out."
+    )
+    errors = validators.validate_sender_sign_off(draft, "warm", config)
+    assert errors == []
+
+
+def test_email_with_sender_identity_after_opt_out_fails(config):
+    draft = DraftResult(
+        subject="S", body="Hi Maya, thanks.\n\nReply STOP to opt out.\n\nOz, GTM Engineer, ScyllaDB"
+    )
+    errors = validators.validate_sender_sign_off(draft, "warm", config)
+    assert any("after the opt-out" in e for e in errors)
+
+
+def test_invite_skips_sender_sign_off_check(config):
+    draft = DraftResult(body="Hi Maya, would love to connect.")
+    errors = validators.validate_sender_sign_off(draft, "invite", config)
+    assert errors == []

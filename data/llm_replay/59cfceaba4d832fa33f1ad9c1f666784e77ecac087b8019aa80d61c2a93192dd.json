@@ -1,7 +1,0 @@
-{
-  "text": "{\"subject\":null,\"body\":\"Hi Dana, congrats on joining Brightwave AI as Head of Infrastructure. Your background includes Northwind Payments, where fraud scoring is a core data workload, and I'd be glad to connect and follow what you build next. - Oz, GTM Engineer at ScyllaDB\",\"evidence_ids\":[\"champ_p12_a01\"],\"value_prop_ids\":[\"vp_migrate\"],\"context_fact_ids\":[]}",
-  "tokens_in": 2481,
-  "tokens_out": 856,
-  "model": "claude-opus-5-5",
-  "prompt_version": "personalize.v5"
-}

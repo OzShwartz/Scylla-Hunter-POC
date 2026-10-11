@@ -104,7 +104,7 @@ hitl:
 
 # ---------- Messaging ----------
 messaging:
-  prompt_version: "personalize.v5"
+  prompt_version: "personalize.v6"
   sender: { name: "Oz", title: "GTM Engineer", company: "ScyllaDB" }
   linkedin_invite_max_chars: 280   # LinkedIn note limits vary by account type; keep a margin
   email_max_words: 120
@@ -126,6 +126,7 @@ messaging:
     - "Email: one value prop matched to persona, one soft call to action, an opt-out line."
     - "cf_ibm (the IBM/DataStax acquisition) may be cited only in a decision_maker email, and only as one short clause - never as the opening sentence, and never the main argument of the message."
     - "A practitioner email stays purely technical: no vendor-ownership or acquisition commentary, and never cite cf_ibm. Speak to their own workload and technology (Cassandra, CQL) rather than naming a vendor, wherever the evidence allows it."
+    - "cf_ibm implies this account itself runs a DataStax/Cassandra product. Only cite it if at least one of this account's own evidence items (not a champion_move item, which describes the person's former employer) is high-confidence and shows competitor usage."
   banned_phrases: ["I hope this finds you well", "revolutionary", "game-changer", "synergy", "quick call", "impressive"]
 
 # ---------- Sequencing (trigger rules) ----------

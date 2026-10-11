@@ -4,6 +4,8 @@ from datetime import datetime
 from hunter import db, personalize
 from hunter.llm import LLMResult
 
+MULTI_THREAD_TEST_DB_PATH = "/tmp/hunter_pytest_multithread_block.db"
+
 
 def test_practitioner_is_never_offered_the_ibm_context_fact(config):
     """cf_ibm is decision_maker-only (PRD §11.5) - a practitioner shouldn't
@@ -15,6 +17,55 @@ def test_practitioner_is_never_offered_the_ibm_context_fact(config):
 def test_decision_maker_is_offered_the_ibm_context_fact(config):
     block = personalize._render_context_facts_block(config, "decision_maker")
     assert "cf_ibm" in block
+
+
+def test_other_account_messages_block_is_empty_with_no_siblings():
+    db.reset_db(MULTI_THREAD_TEST_DB_PATH)
+    conn = db.connect(MULTI_THREAD_TEST_DB_PATH)
+    db.upsert_account(conn, id="a01", name="Northwind Payments", domain="northwindpay.example", industry="Fintech", employees=500, hq="NY")
+    db.upsert_lead(conn, id="p01", account_id="a01", first_name="Maya", last_name="Rosen", title="CTO", department="Engineering", skills=[], linkedin_url="https://x", email="maya@x.example")
+
+    block = personalize._render_other_account_messages_block(conn, "a01", exclude_lead_id="p01")
+
+    assert block == "(none)"
+    conn.close()
+
+
+def test_other_account_messages_block_lists_a_sibling_opening_and_evidence():
+    db.reset_db(MULTI_THREAD_TEST_DB_PATH)
+    conn = db.connect(MULTI_THREAD_TEST_DB_PATH)
+    db.upsert_account(conn, id="a01", name="Northwind Payments", domain="northwindpay.example", industry="Fintech", employees=500, hq="NY")
+    db.upsert_lead(conn, id="p01", account_id="a01", first_name="Maya", last_name="Rosen", title="CTO", department="Engineering", skills=[], linkedin_url="https://x", email="maya@x.example")
+    db.upsert_lead(conn, id="p02", account_id="a01", first_name="Tom", last_name="Hale", title="SRE", department="Engineering", skills=[], linkedin_url="https://y", email="tom@x.example")
+    db.insert_message(
+        conn, lead_id="p02", run_id=None, channel="email", variant="cold", subject="S",
+        body="Hi Tom, following up on your fraud-scoring cluster. Reply STOP to opt out.",
+        evidence_ids=["s01"], value_prop_ids=["vp_tco"], approval_route="human", status="PENDING_APPROVAL",
+        prompt_version="test", model="test", tokens=0, created_at=datetime.now(),
+    )
+
+    block = personalize._render_other_account_messages_block(conn, "a01", exclude_lead_id="p01")
+
+    assert "Hi Tom, following up on your fraud-scoring cluster." in block
+    assert "s01" in block
+    conn.close()
+
+
+def test_other_account_messages_block_excludes_the_current_lead_own_messages():
+    db.reset_db(MULTI_THREAD_TEST_DB_PATH)
+    conn = db.connect(MULTI_THREAD_TEST_DB_PATH)
+    db.upsert_account(conn, id="a01", name="Northwind Payments", domain="northwindpay.example", industry="Fintech", employees=500, hq="NY")
+    db.upsert_lead(conn, id="p01", account_id="a01", first_name="Maya", last_name="Rosen", title="CTO", department="Engineering", skills=[], linkedin_url="https://x", email="maya@x.example")
+    db.insert_message(
+        conn, lead_id="p01", run_id=None, channel="linkedin", variant="invite", subject=None,
+        body="Hi Maya, would love to connect.", evidence_ids=["s01"], value_prop_ids=[],
+        approval_route="auto", status="SENT", prompt_version="test", model="test", tokens=0, created_at=datetime.now(),
+    )
+
+    block = personalize._render_other_account_messages_block(conn, "a01", exclude_lead_id="p01")
+
+    assert block == "(none)"
+    conn.close()
 
 
 def test_persistent_validator_failure_retries_once_then_forces_review(pipeline_conn, config, monkeypatch):

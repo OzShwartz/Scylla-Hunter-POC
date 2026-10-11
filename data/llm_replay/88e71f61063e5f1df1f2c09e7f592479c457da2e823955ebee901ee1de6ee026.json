@@ -1,0 +1,7 @@
+{
+  "text": "{\"subject\":\"Modernising a 2B events/day shipment-tracking cluster\",\"body\":\"Hi Joris,\\n\\nLumen Logistics' shipment-tracking service writes 2B events a day to DataStax Enterprise 6.8, and your team is focused on modernising that cluster and reducing operational toil. With IBM having completed its DataStax acquisition in May 2025, it's a sensible point to review options.\\n\\nScyllaDB offers migration tooling and support for moving live Cassandra/DSE workloads, so a high-volume event stream like yours has a supported path off the current cluster.\\n\\nWould it be useful if I sent over an outline of how that migration path works for a workload like this?\\n\\nOz\\nGTM Engineer, ScyllaDB\\n\\nReply STOP to opt out.\",\"evidence_ids\":[\"s03\"],\"value_prop_ids\":[\"vp_migrate\"],\"context_fact_ids\":[\"cf_ibm\"]}",
+  "tokens_in": 3027,
+  "tokens_out": 922,
+  "model": "claude-opus-5-5",
+  "prompt_version": "personalize.v6"
+}

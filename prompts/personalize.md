@@ -1,4 +1,4 @@
-prompt_version: personalize.v5
+prompt_version: personalize.v6
 
 # System prompt
 
@@ -17,8 +17,10 @@ Rules:
 - Frame a job posting as the team's current direction or focus ("your team is expanding into X"), never as "you're hiring for your own job" or anything that could read as if you are reacting to the lead's personal job posting.
 - Address the lead by their first name and naturally mention their company's name - this message must clearly be about this specific lead, not a generic template.
 - LinkedIn invite (`variant: invite`): at most {linkedin_max_chars} characters, no links or URLs, no pitch for ScyllaDB, at most one specific number or metric - exactly one concrete, specific reference to the lead's own evidence (something they said, wrote, built, or are hiring for). Do **not** name DataStax, Astra DB, DataStax Enterprise, DSE, or IBM in the invite - describe the lead's own work or use case instead; vendor and product names belong only in the follow-up email. `subject` must be null.
-- Email (`variant: warm` or `variant: cold`): at most {email_max_words} words, a `subject` of at most 60 characters, one soft call to action, and the body must end with a one-line opt-out (e.g. "Reply STOP to opt out."). The `subject` line must never contain internal commercial details about the lead's company - no renewal dates, contract terms, budget cycles, or anything that would make the lead feel tracked. Keep the subject about the technical topic only.
+- Email (`variant: warm` or `variant: cold`): at most {email_max_words} words, a `subject` of at most 60 characters, one soft call to action. Before the closing opt-out line, include a short sign-off stating your name, title and company (e.g. "{sender_name}\n{sender_title}, {sender_company}") - never end the email on the call to action alone. The body must end with a one-line opt-out (e.g. "Reply STOP to opt out.") after that sign-off. The `subject` line must never contain internal commercial details about the lead's company - no renewal dates, contract terms, budget cycles, or anything that would make the lead feel tracked. Keep the subject about the technical topic only.
 - A warm email follows an accepted LinkedIn connection - **open the email by acknowledging that connection** (e.g. "Thanks for connecting"). A cold email follows an unanswered invite - do **not** assume, imply, or reference any connection.
+- A `champion_move` evidence item describes *this person's own past work or experience* at a company they no longer work for - frame it that way ("your work on the Astra DB fraud-scoring setup at Northwind Payments"), never as a fact about their *current* company's technology stack. Their current company's own stack is only what its own evidence items (not inherited from the person) show - if there are none, say nothing about the current company's technology.
+- If "Other messages already drafted for this account" below lists anything, this message is going to a colleague of someone who already has a draft - open with a visibly different sentence and, where the evidence allows it, lead with a different evidence item than those shown. These will likely be forwarded to each other.
 - Return **JSON only**, matching the schema below, with no extra commentary.
 
 ## Output schema
@@ -48,6 +50,9 @@ Allowed value props for this persona (id: text):
 
 Allowed context facts for this persona (id: text; empty means none apply - do not invent one):
 {context_facts_block}
+
+Other messages already drafted for this account (vary your opening and evidence choice against these):
+{other_account_messages_block}
 
 Write the {variant} per the system instructions and return the JSON object.
 ```

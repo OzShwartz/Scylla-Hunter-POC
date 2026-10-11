@@ -195,6 +195,103 @@ def validate_ibm_mention_not_opening(draft: DraftResult) -> list[str]:
     return []
 
 
+def validate_ibm_fact_requires_competitor_evidence(draft: DraftResult, evidence_signals: list[sqlite3.Row]) -> list[str]:
+    """cf_ibm implies this *account* runs a DataStax/Cassandra product - that
+    must be backed by the account's own high-confidence evidence, not a
+    champion_move signal. champion_move describes a *person's* history at a
+    *different* company (FR-5); it is correctly marked uses_competitor=True
+    and confidence=high (inherited from the signal that named them, PRD §9.2),
+    but using it to justify cf_ibm on the person's *current* account states a
+    fact about that account which isn't actually known - an account whose only
+    signal is a champion_move has no first-party evidence of its own stack.
+    """
+    if "cf_ibm" not in draft.context_fact_ids:
+        return []
+    has_direct_competitor_evidence = any(
+        row["type"] != "champion_move" and row["confidence"] == "high" and bool(row["uses_competitor"])
+        for row in evidence_signals
+    )
+    if not has_direct_competitor_evidence:
+        return [
+            "cf_ibm cited but this account has no high-confidence direct evidence of competitor usage - "
+            "a champion_move signal describes the person's former employer, not this account's own stack"
+        ]
+    return []
+
+
+def _normalize_first_sentence(text: str) -> str:
+    first = re.split(r"(?<=[.!?])\s+", text.strip(), maxsplit=1)[0]
+    return re.sub(r"[^a-z0-9 ]", "", first.lower()).strip()
+
+
+def _word_5grams(text: str) -> set[tuple[str, ...]]:
+    words = re.findall(r"[a-z0-9']+", text.lower())
+    n = 5
+    if len(words) < n:
+        return set()
+    return {tuple(words[i : i + n]) for i in range(len(words) - n + 1)}
+
+
+# Documented threshold (PRD §11.5): a message may share at most 30% of its own
+# 5-word phrases with another message already drafted for the same account.
+# Chosen to tolerate the inevitable overlap from shared sender/company/opt-out
+# boilerplate ("Reply STOP to opt out", "GTM Engineer, ScyllaDB") while still
+# catching two messages that are substantively the same email with the name
+# swapped - the failure mode colleagues actually notice when they compare notes.
+MAX_FIVE_GRAM_OVERLAP_FRACTION = 0.3
+
+
+def validate_distinct_from_account_siblings(draft: DraftResult, other_message_bodies: list[str]) -> list[str]:
+    """PRD §11.5: messages to different leads at the same account must not
+    read as the same template with the name swapped - colleagues forward
+    these to each other. Checks the opening sentence (normalized) for an
+    exact match, and 5-word-phrase overlap against the documented threshold.
+    Heuristic, not exhaustive - see the pattern comment at the top of this
+    module; it catches near-duplicate wording, not restated ideas in
+    different words.
+    """
+    errors: list[str] = []
+    this_first_sentence = _normalize_first_sentence(draft.body)
+    this_ngrams = _word_5grams(draft.body)
+
+    for other_body in other_message_bodies:
+        if this_first_sentence and this_first_sentence == _normalize_first_sentence(other_body):
+            errors.append("Opening sentence is identical (after normalizing) to another message drafted for this account")
+        other_ngrams = _word_5grams(other_body)
+        if this_ngrams and other_ngrams:
+            overlap = len(this_ngrams & other_ngrams) / len(this_ngrams)
+            if overlap >= MAX_FIVE_GRAM_OVERLAP_FRACTION:
+                errors.append(
+                    f"Message shares {overlap:.0%} of its 5-word phrases with another message drafted for "
+                    f"this account (threshold {MAX_FIVE_GRAM_OVERLAP_FRACTION:.0%}) - vary the wording and, "
+                    "where possible, lead with a different evidence item"
+                )
+    return errors
+
+
+def validate_sender_sign_off(draft: DraftResult, variant: str, config: Config) -> list[str]:
+    """PRD §11.5: every email states the sender's identity (name, title,
+    company) before the opt-out line - Maya's draft surfaced a case where the
+    sender was never named at all. Presence + ordering: an earlier
+    self-introduction ("I'm Oz, GTM Engineer at ScyllaDB...") satisfies this
+    too, as long as it comes before the opt-out line - this is not a strict
+    "immediately before" window.
+    """
+    if variant == "invite":
+        return []
+    name = config.messaging.sender.name
+    title = config.messaging.sender.title
+    company = config.messaging.sender.company
+    body = draft.body
+    missing = [f for f in (name, title, company) if f not in body]
+    if missing:
+        return [f"Email never states the sender's {', '.join(missing)} before the opt-out line"]
+    optout_match = OPT_OUT_PATTERN.search(body)
+    if optout_match and body.rfind(name) > optout_match.start():
+        return ["Sender identity appears after the opt-out line, not before it"]
+    return []
+
+
 def is_sensitive_content(draft: DraftResult) -> bool:
     """PRD §9.6: content that must always get human review, regardless of account
     score or approval_mode - a competitor product mention, the IBM/DataStax
@@ -220,6 +317,7 @@ def validate_message(
     company_name: str,
     evidence_signals: list[sqlite3.Row],
     config: Config,
+    other_message_bodies: list[str] | None = None,
 ) -> list[str]:
     errors: list[str] = []
     errors += validate_length(draft, variant, config)
@@ -235,4 +333,7 @@ def validate_message(
     errors += validate_evidence_count(draft)
     errors += validate_no_ibm_fact_for_practitioner(draft, persona)
     errors += validate_ibm_mention_not_opening(draft)
+    errors += validate_ibm_fact_requires_competitor_evidence(draft, evidence_signals)
+    errors += validate_distinct_from_account_siblings(draft, other_message_bodies or [])
+    errors += validate_sender_sign_off(draft, variant, config)
     return errors
