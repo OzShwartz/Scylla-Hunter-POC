@@ -564,8 +564,10 @@ No email addresses or other personal data that the text does not need.
 | No sender claims beyond name/title/company | ✓ | ✓ |
 | No competitor/vendor product name (DataStax/Astra/DSE/IBM) | ✓ | — (vendor context belongs here) |
 | Connection framing matches variant (warm acknowledges it, cold doesn't assume it) | — | ✓ |
+| `cf_ibm` never cited in a practitioner message | — | ✓ |
+| `cf_ibm`, if cited, is not the opening of the message | — | ✓ |
 
-The sender-claims and connection-framing checks are pattern-based (regex over known phrasings), not a general semantic grounding check - free-text hallucination has no fully general deterministic test. They catch the known failure shape; see `hunter/validators.py`.
+The sender-claims, connection-framing and `cf_ibm`-opening checks are pattern-based (regex over known phrasings / a position window), not a general semantic grounding check - free-text hallucination has no fully general deterministic test. They catch the known failure shape; see `hunter/validators.py`. The `cf_ibm`-for-practitioner check is the exception: `context_fact_ids` is a structured field, not free text, so that one check is exact, not heuristic. `cf_ibm` is also withheld from a practitioner's *allowed* context facts in the prompt itself (`personalize._render_context_facts_block`, config-driven via `context_facts[].allowed_personas`) - the validator is the deterministic backstop, not the only line of defense.
 
 **Guardrails summary:**
 - *Input:* source text is delimited and treated as data (prompt-injection defence). Only minimal context is sent.
@@ -623,10 +625,10 @@ The rule logic is identical in all three. Only the source of events and time cha
    - Joris, Lior and Dana are pending approval (score-based).
 2. `hunter review`, then edit one, `hunter approve --all` for the rest. All three (Joris, Lior, Dana) are pending on score alone - a LinkedIn invite never carries the §9.6 content override (`validate_no_competitor_mention_in_invite` forbids it outright), so `--all` needs no `--include-sensitive` here. Their invites are "sent".
 3. `hunter simulate --days 7`:
-   - Maya accepts on day 2 → warm email. Northwind's only evidence is Astra DB usage, and the grounded warm email names it - **confirmed against a real recorded run**: forced to review by the §9.6 sensitive-content override despite the 96 score.
-   - Lior accepts on day 4 → warm email, pending approval (score-based, 78 < 80). His evidence is self-managed Apache Cassandra, not a DataStax/IBM product, so his is the **one email in the batch the content override does not touch** - confirmed against a real recorded run.
-   - Tom, Joris and Dana do not accept → cold emails on day 7. All three are forced to review by content, not just score: Tom's and Dana's name Astra DB (Dana's by champion-move evidence), Joris's names DataStax Enterprise - each also cites the IBM/DataStax acquisition. Tom's case is the routing gap the override exists for: the highest-scoring account (96) producing the most commercially sensitive message of the batch.
-4. `hunter review` shows Maya's, Tom's, Joris's and Dana's emails tagged `[SENSITIVE CONTENT]` - four of the five. `hunter approve --all` approves only Lior's (the one pending on score alone) and reports the other four as skipped, by design. Read each flagged one, then `hunter approve <msg_id>` individually - here, approve all four once reviewed.
+   - Maya (decision_maker) accepts on day 2 → warm email. Her evidence is Astra DB usage, and the grounded warm email names it - forced to review by the §9.6 sensitive-content override on the vendor-name mention alone (this draft does not cite `cf_ibm`).
+   - Lior (practitioner) accepts on day 4 → warm email, pending approval (score-based, 78 < 80). Purely technical - no vendor name, no `cf_ibm` - so his is the one email in the batch the content override does not touch.
+   - Tom (practitioner), Joris (decision_maker) and Dana (decision_maker) do not accept → cold emails on day 7. Tom's is now purely technical too (score 96 ≥ 80, no vendor name, no `cf_ibm` → **auto-approved and sent**, not forced to review) - the practitioner-angle rule (§11.5) removed the routing gap this case exposed in Phase 4, where Tom's draft had named Astra DB and the acquisition despite being a practitioner. Joris's and Dana's are decision_maker drafts that cite `cf_ibm` as one clause after the main migration/throughput argument, not as the opener - still forced to review by the vendor-name mention (DataStax Enterprise / Astra DB), as intended.
+4. `hunter review` shows Maya's, Joris's and Dana's emails tagged `[SENSITIVE CONTENT]` - three of the five, down from four once the practitioner-angle rule took effect. `hunter approve --all` approves Lior's (score-band) and reports the other three as skipped. Tom's was already sent automatically in step 3. Read each flagged one, then `hunter approve <msg_id>` individually - here, approve all three once reviewed.
 5. `hunter report` (FR-10, not yet built - Phase 5): the funnel will show 5 invited, 2 accepted, 5 emailed (2 warm, 3 cold) - confirmed via direct DB query (`leads` status counts, `messages` SENT counts, `outbox.jsonl` line count) ahead of `report.md` existing.
 
 ---
@@ -1013,10 +1015,10 @@ python -m hunter reset
 python -m hunter run                 # 5 qualified; 2 auto-sent, 3 pending
 python -m hunter review              # see pending drafts with evidence
 python -m hunter approve --all       # Joris, Lior, Dana - all pending on score alone
-python -m hunter simulate --days 7   # accepts on day 2 and 4; cold emails on day 7
-python -m hunter review              # 4 of 5 emails tagged [SENSITIVE CONTENT] - only Lior's is score-band
-python -m hunter approve --all       # approves Lior's; skips the other 4, with their ids
-python -m hunter approve <msg_id>    # read each flagged one, then approve individually (x4)
+python -m hunter simulate --days 7   # accepts on day 2 and 4; Tom's cold email auto-sends (purely technical)
+python -m hunter review              # 3 of the 4 remaining emails tagged [SENSITIVE CONTENT]; Lior's is score-band
+python -m hunter approve --all       # approves Lior's; skips the other 3, with their ids
+python -m hunter approve <msg_id>    # read each flagged one, then approve individually (x3)
 python -m hunter report --html
 ```
 

@@ -1,4 +1,4 @@
-prompt_version: personalize.v4
+prompt_version: personalize.v5
 
 # System prompt
 
@@ -46,7 +46,7 @@ Evidence items (id | type | date | confidence | quote | use_case | why_now):
 Allowed value props for this persona (id: text):
 {value_props_block}
 
-Allowed context facts (id: text):
+Allowed context facts for this persona (id: text; empty means none apply - do not invent one):
 {context_facts_block}
 
 Write the {variant} per the system instructions and return the JSON object.

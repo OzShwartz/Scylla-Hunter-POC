@@ -104,7 +104,7 @@ hitl:
 
 # ---------- Messaging ----------
 messaging:
-  prompt_version: "personalize.v4"
+  prompt_version: "personalize.v5"
   sender: { name: "Oz", title: "GTM Engineer", company: "ScyllaDB" }
   linkedin_invite_max_chars: 280   # LinkedIn note limits vary by account type; keep a margin
   email_max_words: 120
@@ -114,13 +114,18 @@ messaging:
     - { id: vp_tco,     text: "Higher throughput per node, which typically means fewer nodes and lower infrastructure cost", verify: true }
     - { id: vp_migrate, text: "Migration tooling and support for moving live Cassandra/DSE workloads", verify: true }
   context_facts:
-    - { id: cf_ibm, text: "IBM completed its acquisition of DataStax in May 2025; DataStax offerings are moving under IBM watsonx." }
+    # decision_maker only (see §11.5 / routing data from Phase 4): practitioners get a purely
+    # technical angle, never vendor-ownership commentary - also enforced by
+    # validators.validate_no_ibm_fact_for_practitioner, not just this allow-list.
+    - { id: cf_ibm, text: "IBM completed its acquisition of DataStax in May 2025; DataStax offerings are moving under IBM watsonx.", allowed_personas: ["decision_maker"] }
   rules:
     - "Only reference facts present in the lead's evidence items or in context_facts; cite their ids."
     - "Never claim the prospect uses DataStax unless an evidence item with confidence high says so."
     - "No FUD about IBM or DataStax. The acquisition may only be framed as a good moment to review options."
     - "LinkedIn invite: no pitch, no link, one concrete reference to their work."
     - "Email: one value prop matched to persona, one soft call to action, an opt-out line."
+    - "cf_ibm (the IBM/DataStax acquisition) may be cited only in a decision_maker email, and only as one short clause - never as the opening sentence, and never the main argument of the message."
+    - "A practitioner email stays purely technical: no vendor-ownership or acquisition commentary, and never cite cf_ibm. Speak to their own workload and technology (Cassandra, CQL) rather than naming a vendor, wherever the evidence allows it."
   banned_phrases: ["I hope this finds you well", "revolutionary", "game-changer", "synergy", "quick call", "impressive"]
 
 # ---------- Sequencing (trigger rules) ----------

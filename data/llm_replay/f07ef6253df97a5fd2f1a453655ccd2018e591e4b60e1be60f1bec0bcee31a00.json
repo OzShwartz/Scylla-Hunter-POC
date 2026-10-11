@@ -1,7 +1,0 @@
-{
-  "text": "{\"subject\":null,\"body\":\"Hi Tom, I'm Oz, GTM Engineer at ScyllaDB. Running fraud scoring at Northwind Payments at 40k transactions per second across regions is the kind of latency-sensitive workload I like learning about from the SREs who keep it running. Glad to connect.\",\"evidence_ids\":[\"s01\"],\"value_prop_ids\":[\"vp_latency\"],\"context_fact_ids\":[]}",
-  "tokens_in": 2438,
-  "tokens_out": 467,
-  "model": "claude-opus-5-5",
-  "prompt_version": "personalize.v4"
-}

@@ -138,6 +138,7 @@ class ValueProp(BaseModel):
 class ContextFact(BaseModel):
     id: str
     text: str
+    allowed_personas: list[str] | None = None  # None = offered to every persona
 
 
 class MessagingSender(BaseModel):

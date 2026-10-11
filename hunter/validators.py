@@ -36,6 +36,12 @@ CONNECTION_ACK_PATTERN = re.compile(
 
 RENEWAL_CONTRACT_PATTERN = re.compile(r"\brenewal\b|\bcontract\b|\brfp\b|\bprocurement\b", re.IGNORECASE)
 
+# The IBM/DataStax-acquisition framing specifically (narrower than
+# COMPETITOR_MENTION_PATTERN, which also matches plain vendor/product names
+# like "Astra DB" that are legitimate technical evidence, not ownership FUD).
+IBM_ACQUISITION_PATTERN = re.compile(r"\bibm\b|acquisition|watsonx", re.IGNORECASE)
+IBM_OPENING_WINDOW_CHARS = 100
+
 MAX_EVIDENCE_ITEMS_PER_MESSAGE = 2
 
 
@@ -161,6 +167,34 @@ def validate_evidence_count(draft: DraftResult) -> list[str]:
     return []
 
 
+def validate_no_ibm_fact_for_practitioner(draft: DraftResult, persona: str) -> list[str]:
+    """PRD §11.5: the IBM/DataStax acquisition (cf_ibm) is a decision_maker-only
+    angle - a practitioner email must stay purely technical. cf_ibm is already
+    withheld from a practitioner's allowed context facts in the prompt
+    (personalize._render_context_facts_block); this is the deterministic
+    backstop that catches it regardless, since context_fact_ids is a
+    structured field, not free text - no heuristic needed here.
+    """
+    if persona == "practitioner" and "cf_ibm" in draft.context_fact_ids:
+        return ["Practitioner email cites cf_ibm (IBM/DataStax acquisition) - decision_maker angle only"]
+    return []
+
+
+def validate_ibm_mention_not_opening(draft: DraftResult) -> list[str]:
+    """When cf_ibm is cited (decision_maker only), it must be one clause, not
+    the opening - the acquisition should never be the first thing the lead
+    reads. Heuristic position check, not exhaustive - see the pattern comment
+    at the top of this module; "never the main argument" is a prompt
+    instruction and a human-review concern, not something a position check
+    alone can verify.
+    """
+    if "cf_ibm" not in draft.context_fact_ids:
+        return []
+    if IBM_ACQUISITION_PATTERN.search(draft.body[:IBM_OPENING_WINDOW_CHARS]):
+        return ["Message opens with the IBM/DataStax acquisition - cite it later, as one short clause, not the opener"]
+    return []
+
+
 def is_sensitive_content(draft: DraftResult) -> bool:
     """PRD §9.6: content that must always get human review, regardless of account
     score or approval_mode - a competitor product mention, the IBM/DataStax
@@ -199,4 +233,6 @@ def validate_message(
     errors += validate_no_competitor_mention_in_invite(draft, variant)
     errors += validate_connection_framing(draft, variant)
     errors += validate_evidence_count(draft)
+    errors += validate_no_ibm_fact_for_practitioner(draft, persona)
+    errors += validate_ibm_mention_not_opening(draft)
     return errors

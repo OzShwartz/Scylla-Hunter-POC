@@ -5,6 +5,18 @@ from hunter import db, personalize
 from hunter.llm import LLMResult
 
 
+def test_practitioner_is_never_offered_the_ibm_context_fact(config):
+    """cf_ibm is decision_maker-only (PRD §11.5) - a practitioner shouldn't
+    even see it as an option, not just be told not to use it."""
+    block = personalize._render_context_facts_block(config, "practitioner")
+    assert "cf_ibm" not in block
+
+
+def test_decision_maker_is_offered_the_ibm_context_fact(config):
+    block = personalize._render_context_facts_block(config, "decision_maker")
+    assert "cf_ibm" in block
+
+
 def test_persistent_validator_failure_retries_once_then_forces_review(pipeline_conn, config, monkeypatch):
     """FR-6: on failure, retry once; if it still fails, route to human review with the reason."""
     bad_json = json.dumps({"subject": None, "body": "x" * 500, "evidence_ids": [], "value_prop_ids": []})

@@ -1,0 +1,7 @@
+{
+  "text": "{\"subject\":\"Modernising a 2B events/day DSE cluster\",\"body\":\"Hi Joris,\\n\\nLumen Logistics' shipment-tracking service writes 2B events/day to DataStax Enterprise 6.8, and your team is currently focused on modernising that cluster and reducing operational toil.\\n\\nI'm Oz, GTM Engineer at ScyllaDB. We provide migration tooling and support for moving live Cassandra/DSE workloads, so a modernisation project doesn't have to mean a risky cutover. With IBM's acquisition of DataStax now complete, it may also be a natural moment to review options.\\n\\nWould a short outline of how a live DSE migration typically runs be useful to you?\\n\\nReply STOP to opt out.\",\"evidence_ids\":[\"s03\"],\"value_prop_ids\":[\"vp_migrate\"],\"context_fact_ids\":[\"cf_ibm\"]}",
+  "tokens_in": 2621,
+  "tokens_out": 778,
+  "model": "claude-opus-5-5",
+  "prompt_version": "personalize.v5"
+}

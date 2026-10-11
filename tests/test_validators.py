@@ -226,3 +226,57 @@ def test_sensitive_content_detects_renewal_mention():
 def test_sensitive_content_absent_for_clean_draft():
     draft = DraftResult(subject="S", body="Hi Maya, following up on fraud scoring at Northwind.", evidence_ids=["s01"])
     assert not validators.is_sensitive_content(draft)
+
+
+def test_practitioner_email_citing_ibm_fact_fails():
+    draft = DraftResult(
+        subject="S", body="Hi Tom, re: your fraud-scoring cluster. Reply STOP to opt out.",
+        evidence_ids=["s01"], context_fact_ids=["cf_ibm"],
+    )
+    errors = validators.validate_no_ibm_fact_for_practitioner(draft, "practitioner")
+    assert any("cf_ibm" in e for e in errors)
+
+
+def test_decision_maker_email_citing_ibm_fact_passes_this_check():
+    draft = DraftResult(
+        subject="S", body="Hi Maya, re: your fraud-scoring cluster. Reply STOP to opt out.",
+        evidence_ids=["s01"], context_fact_ids=["cf_ibm"],
+    )
+    errors = validators.validate_no_ibm_fact_for_practitioner(draft, "decision_maker")
+    assert errors == []
+
+
+def test_practitioner_email_without_ibm_fact_passes():
+    draft = DraftResult(subject="S", body="Hi Tom, re: your fraud-scoring cluster.", evidence_ids=["s01"])
+    errors = validators.validate_no_ibm_fact_for_practitioner(draft, "practitioner")
+    assert errors == []
+
+
+def test_ibm_fact_as_the_opening_fails():
+    draft = DraftResult(
+        subject="S",
+        body="With IBM's acquisition of DataStax now complete, it's worth reviewing options for your fraud-scoring cluster.",
+        evidence_ids=["s01"], context_fact_ids=["cf_ibm"],
+    )
+    errors = validators.validate_ibm_mention_not_opening(draft)
+    assert any("opens with" in e for e in errors)
+
+
+def test_ibm_fact_cited_later_in_the_body_passes():
+    draft = DraftResult(
+        subject="S",
+        body=(
+            "Hi Maya, your team at Northwind Payments is evaluating cost and latency improvements "
+            "for the multi-region fraud-scoring data layer, which is a workload ScyllaDB fits well. "
+            "With IBM's acquisition of DataStax now complete, this may be a good moment to compare options."
+        ),
+        evidence_ids=["s01"], context_fact_ids=["cf_ibm"],
+    )
+    errors = validators.validate_ibm_mention_not_opening(draft)
+    assert errors == []
+
+
+def test_no_ibm_fact_cited_skips_opening_check():
+    draft = DraftResult(subject="S", body="IBM announced something unrelated at the very start here.", evidence_ids=["s01"])
+    errors = validators.validate_ibm_mention_not_opening(draft)
+    assert errors == []

@@ -46,8 +46,17 @@ def _render_value_props_block(persona: str, config: Config) -> str:
     return "\n".join(f"- {vp_id}: {by_id[vp_id]}" for vp_id in allowed_ids if vp_id in by_id)
 
 
-def _render_context_facts_block(config: Config) -> str:
-    return "\n".join(f"- {cf.id}: {cf.text}" for cf in config.messaging.context_facts)
+def _render_context_facts_block(config: Config, persona: str) -> str:
+    """Only offers a context fact the lead's persona is allowed (PRD §11.5):
+    cf_ibm is decision_maker-only, so a practitioner is never even given it to
+    cite - stronger than asking the model not to use it (validators.py's
+    validate_no_ibm_fact_for_practitioner is the deterministic backstop for
+    that same rule, in case this allow-list is ever misconfigured)."""
+    facts = [
+        cf for cf in config.messaging.context_facts
+        if cf.allowed_personas is None or persona in cf.allowed_personas
+    ]
+    return "\n".join(f"- {cf.id}: {cf.text}" for cf in facts)
 
 
 def _render_system(spec: PromptSpec, config: Config) -> str:
@@ -82,7 +91,7 @@ def _render_user(
         previous_interaction=previous_interaction,
         evidence_block=_render_evidence_block(evidence_signals),
         value_props_block=_render_value_props_block(lead["persona"], config),
-        context_facts_block=_render_context_facts_block(config),
+        context_facts_block=_render_context_facts_block(config, lead["persona"]),
     )
 
 

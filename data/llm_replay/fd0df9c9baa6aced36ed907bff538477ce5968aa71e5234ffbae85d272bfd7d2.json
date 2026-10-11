@@ -1,7 +1,0 @@
-{
-  "text": "{\"subject\":null,\"body\":\"Hi Maya, I'm Oz, GTM Engineer at ScyllaDB. I came across how Northwind Payments runs fraud scoring with single-digit millisecond reads across multiple regions, a demanding target for payments. Would be glad to connect and follow your team's work.\",\"evidence_ids\":[\"s01\"],\"value_prop_ids\":[\"vp_tco\"],\"context_fact_ids\":[]}",
-  "tokens_in": 2464,
-  "tokens_out": 448,
-  "model": "claude-opus-5-5",
-  "prompt_version": "personalize.v4"
-}
