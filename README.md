@@ -7,7 +7,7 @@ Full spec: **[PRD.md](PRD.md)**. Build log: **[AI_WORKFLOW.md](AI_WORKFLOW.md)**
 ## Quickstart (no keys, ~2 minutes, Python 3.11+)
 
 ```bash
-git clone https://github.com/OzShwartz/Scylla-Scount-POC.git && cd Scylla-Scount-POC
+git clone https://github.com/OzShwartz/Scylla-Hunter-POC.git && cd Scylla-Hunter-POC
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python -m hunter reset
