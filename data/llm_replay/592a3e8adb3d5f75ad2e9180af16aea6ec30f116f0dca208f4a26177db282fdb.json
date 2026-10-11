@@ -1,0 +1,7 @@
+{
+  "text": "{\"subject\":null,\"body\":\"Hi Joris, I saw that the Lumen Logistics platform team is looking at modernising the cluster behind your shipment-tracking service, which writes 2B events a day. I'm on the GTM side at ScyllaDB and would like to connect with platform leaders working at that scale.\",\"evidence_ids\":[\"s03\"],\"value_prop_ids\":[\"vp_migrate\"],\"context_fact_ids\":[]}",
+  "tokens_in": 3107,
+  "tokens_out": 147,
+  "model": "claude-opus-5-5",
+  "prompt_version": "personalize.v7"
+}

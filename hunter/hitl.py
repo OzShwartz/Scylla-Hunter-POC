@@ -208,9 +208,7 @@ def edit(
     lead = db.get_lead(conn, message["lead_id"])
     account = db.get_account(conn, lead["account_id"])
     evidence_signals = evidence_signals_for_account(conn, account["id"])
-    other_message_bodies = [
-        m["body"] for m in db.list_messages_for_account(conn, account["id"], exclude_lead_id=lead["id"])
-    ]
+    other_messages = db.list_messages_for_account(conn, account["id"], exclude_lead_id=lead["id"])
 
     draft = DraftResult(
         subject=message["subject"],
@@ -226,7 +224,7 @@ def edit(
         company_name=account["name"],
         evidence_signals=evidence_signals,
         config=config,
-        other_message_bodies=other_message_bodies,
+        other_messages=other_messages,
     )
 
     original_body = message["original_body"] or message["body"]

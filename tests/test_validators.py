@@ -1,3 +1,5 @@
+import json
+
 from hunter import validators
 from hunter.models import DraftResult
 
@@ -304,8 +306,12 @@ def test_no_ibm_fact_cited_skips_direct_evidence_check():
     assert errors == []
 
 
+def _sibling(body: str, evidence_ids: list[str] | None = None) -> dict:
+    return {"body": body, "evidence_ids": json.dumps(evidence_ids or [])}
+
+
 def test_identical_opening_sentence_fails():
-    sibling = "I wanted to share something relevant to your database setup. Lots of different content follows for Tom."
+    sibling = _sibling("I wanted to share something relevant to your database setup. Lots of different content follows for Tom.")
     draft = DraftResult(
         body="I wanted to share something relevant to your database setup. Completely different content for Maya."
     )
@@ -315,14 +321,14 @@ def test_identical_opening_sentence_fails():
 
 def test_high_five_gram_overlap_fails():
     shared = "the shard per core architecture avoids garbage collection pauses entirely for predictable latency"
-    sibling = f"Hi Tom, {shared} under load. Hope that helps."
+    sibling = _sibling(f"Hi Tom, {shared} under load. Hope that helps.")
     draft = DraftResult(body=f"Hi Maya, {shared} under load. Let me know.")
     errors = validators.validate_distinct_from_account_siblings(draft, [sibling])
     assert any("5-word phrases" in e for e in errors)
 
 
 def test_distinct_same_account_messages_pass():
-    sibling = "Hi Tom, I caught your talk on leaderboard tail latency and wanted to share a quick note."
+    sibling = _sibling("Hi Tom, I caught your talk on leaderboard tail latency and wanted to share a quick note.")
     draft = DraftResult(body="Hi Maya, your team's capacity planning work for the multi-region layer caught my eye.")
     errors = validators.validate_distinct_from_account_siblings(draft, [sibling])
     assert errors == []
@@ -332,6 +338,55 @@ def test_no_siblings_skips_duplicate_check():
     draft = DraftResult(body="Hi Maya, following up on fraud scoring at Northwind.")
     errors = validators.validate_distinct_from_account_siblings(draft, [])
     assert errors == []
+
+
+def test_leading_with_same_primary_evidence_fails():
+    """PRD §11.5: Maya's and Tom's emails at Northwind both led with the
+    case-study facts despite different wording - this is the simpler,
+    structural check Oz asked for after the n-gram check alone missed it.
+    """
+    sibling = _sibling("Hi Tom, re: your fraud-scoring cluster.", evidence_ids=["s01"])
+    draft = DraftResult(body="Hi Maya, re: your fraud-scoring cluster too.", evidence_ids=["s01", "s02"])
+    evidence_signals = [{"id": "s01"}, {"id": "s02"}]  # account has 2 evidence items
+    errors = validators.validate_distinct_primary_evidence_for_account(draft, [sibling], evidence_signals)
+    assert any("s01" in e for e in errors)
+
+
+def test_leading_with_different_primary_evidence_passes():
+    sibling = _sibling("Hi Tom, re: your fraud-scoring cluster.", evidence_ids=["s01"])
+    draft = DraftResult(body="Hi Maya, re: your capacity planning work.", evidence_ids=["s02"])
+    evidence_signals = [{"id": "s01"}, {"id": "s02"}]
+    errors = validators.validate_distinct_primary_evidence_for_account(draft, [sibling], evidence_signals)
+    assert errors == []
+
+
+def test_single_evidence_account_skips_primary_evidence_check():
+    """Can't ask for a different lead evidence item when the account only has one."""
+    sibling = _sibling("Hi Tom, re: your fraud-scoring cluster.", evidence_ids=["s01"])
+    draft = DraftResult(body="Hi Maya, re: your fraud-scoring cluster too.", evidence_ids=["s01"])
+    evidence_signals = [{"id": "s01"}]
+    errors = validators.validate_distinct_primary_evidence_for_account(draft, [sibling], evidence_signals)
+    assert errors == []
+
+
+def test_no_siblings_skips_primary_evidence_check():
+    draft = DraftResult(body="Hi Maya, re: your fraud-scoring cluster.", evidence_ids=["s01"])
+    evidence_signals = [{"id": "s01"}, {"id": "s02"}]
+    errors = validators.validate_distinct_primary_evidence_for_account(draft, [], evidence_signals)
+    assert errors == []
+
+
+def test_citing_siblings_primary_evidence_as_a_secondary_item_fails():
+    """Tom's real recorded case: he led with his own evidence (s02) but still
+    cited Maya's primary (s01) as a second item, and restated its facts in
+    prose anyway. Leading with a different id isn't enough - the sibling's
+    headline evidence must not be cited at all when another item exists.
+    """
+    sibling = _sibling("Hi Maya, re: the case study.", evidence_ids=["s01"])
+    draft = DraftResult(body="Hi Tom, re: capacity planning.", evidence_ids=["s02", "s01"])
+    evidence_signals = [{"id": "s01"}, {"id": "s02"}]
+    errors = validators.validate_distinct_primary_evidence_for_account(draft, [sibling], evidence_signals)
+    assert any("s01" in e for e in errors)
 
 
 def test_email_without_sender_identity_fails(config):

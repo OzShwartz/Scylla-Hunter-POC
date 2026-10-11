@@ -25,7 +25,8 @@ def test_other_account_messages_block_is_empty_with_no_siblings():
     db.upsert_account(conn, id="a01", name="Northwind Payments", domain="northwindpay.example", industry="Fintech", employees=500, hq="NY")
     db.upsert_lead(conn, id="p01", account_id="a01", first_name="Maya", last_name="Rosen", title="CTO", department="Engineering", skills=[], linkedin_url="https://x", email="maya@x.example")
 
-    block = personalize._render_other_account_messages_block(conn, "a01", exclude_lead_id="p01")
+    other_messages = db.list_messages_for_account(conn, "a01", exclude_lead_id="p01")
+    block = personalize._render_other_account_messages_block(other_messages)
 
     assert block == "(none)"
     conn.close()
@@ -44,7 +45,8 @@ def test_other_account_messages_block_lists_a_sibling_opening_and_evidence():
         prompt_version="test", model="test", tokens=0, created_at=datetime.now(),
     )
 
-    block = personalize._render_other_account_messages_block(conn, "a01", exclude_lead_id="p01")
+    other_messages = db.list_messages_for_account(conn, "a01", exclude_lead_id="p01")
+    block = personalize._render_other_account_messages_block(other_messages)
 
     assert "Hi Tom, following up on your fraud-scoring cluster." in block
     assert "s01" in block
@@ -62,7 +64,8 @@ def test_other_account_messages_block_excludes_the_current_lead_own_messages():
         approval_route="auto", status="SENT", prompt_version="test", model="test", tokens=0, created_at=datetime.now(),
     )
 
-    block = personalize._render_other_account_messages_block(conn, "a01", exclude_lead_id="p01")
+    other_messages = db.list_messages_for_account(conn, "a01", exclude_lead_id="p01")
+    block = personalize._render_other_account_messages_block(other_messages)
 
     assert block == "(none)"
     conn.close()

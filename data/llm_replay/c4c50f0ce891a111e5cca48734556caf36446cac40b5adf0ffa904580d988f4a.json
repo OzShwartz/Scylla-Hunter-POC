@@ -1,7 +1,0 @@
-{
-  "text": "{\"subject\":null,\"body\":\"Hi Dana, congrats on joining Brightwave AI. I came across your work on the fraud-scoring data setup at Northwind Payments and would like to connect with someone who has run that kind of workload in production. - Oz, GTM Engineer at ScyllaDB\",\"evidence_ids\":[\"champ_p12_a01\"],\"value_prop_ids\":[\"vp_cql\"],\"context_fact_ids\":[]}",
-  "tokens_in": 2887,
-  "tokens_out": 405,
-  "model": "claude-opus-5-5",
-  "prompt_version": "personalize.v6"
-}

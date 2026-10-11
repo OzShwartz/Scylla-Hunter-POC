@@ -104,7 +104,7 @@ hitl:
 
 # ---------- Messaging ----------
 messaging:
-  prompt_version: "personalize.v6"
+  prompt_version: "personalize.v7"
   sender: { name: "Oz", title: "GTM Engineer", company: "ScyllaDB" }
   linkedin_invite_max_chars: 280   # LinkedIn note limits vary by account type; keep a margin
   email_max_words: 120

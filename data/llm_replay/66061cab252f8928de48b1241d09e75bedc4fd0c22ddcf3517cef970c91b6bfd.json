@@ -1,7 +1,0 @@
-{
-  "text": "{\"subject\":\"Predictable p99 for a multi-region data layer\",\"body\":\"Hi Tom,\\n\\nIt looks like the Northwind Payments team is focused on capacity planning and on evaluating cost and latency improvements across its multi-region data layer.\\n\\nIf tail latency is part of that evaluation, this might be relevant: ScyllaDB uses a shard-per-core C++ architecture with no JVM garbage-collection pauses, which is aimed at keeping p99 latency predictable rather than spiky.\\n\\nWould a short technical write-up on how that architecture handles read latency be useful as you work through the evaluation?\\n\\nOz\\nGTM Engineer, ScyllaDB\\n\\nReply STOP to opt out.\",\"evidence_ids\":[\"s02\"],\"value_prop_ids\":[\"vp_latency\"],\"context_fact_ids\":[]}",
-  "tokens_in": 3090,
-  "tokens_out": 799,
-  "model": "claude-opus-5-5",
-  "prompt_version": "personalize.v6"
-}

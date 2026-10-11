@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import sqlite3
 
@@ -241,20 +242,25 @@ def _word_5grams(text: str) -> set[tuple[str, ...]]:
 MAX_FIVE_GRAM_OVERLAP_FRACTION = 0.3
 
 
-def validate_distinct_from_account_siblings(draft: DraftResult, other_message_bodies: list[str]) -> list[str]:
+def validate_distinct_from_account_siblings(draft: DraftResult, other_messages: list[sqlite3.Row]) -> list[str]:
     """PRD §11.5: messages to different leads at the same account must not
     read as the same template with the name swapped - colleagues forward
     these to each other. Checks the opening sentence (normalized) for an
     exact match, and 5-word-phrase overlap against the documented threshold.
     Heuristic, not exhaustive - see the pattern comment at the top of this
-    module; it catches near-duplicate wording, not restated ideas in
-    different words.
+    module; it catches near-duplicate *wording*. It does not catch two
+    messages that are worded differently but lead with the same underlying
+    fact - validate_distinct_primary_evidence_for_account (below) is the
+    simpler, structural check for that, and is the one Oz asked for after
+    finding this check alone let Maya's and Tom's emails both lead with
+    Northwind's case-study facts despite different phrasing.
     """
     errors: list[str] = []
     this_first_sentence = _normalize_first_sentence(draft.body)
     this_ngrams = _word_5grams(draft.body)
 
-    for other_body in other_message_bodies:
+    for other in other_messages:
+        other_body = other["body"]
         if this_first_sentence and this_first_sentence == _normalize_first_sentence(other_body):
             errors.append("Opening sentence is identical (after normalizing) to another message drafted for this account")
         other_ngrams = _word_5grams(other_body)
@@ -267,6 +273,48 @@ def validate_distinct_from_account_siblings(draft: DraftResult, other_message_bo
                     "where possible, lead with a different evidence item"
                 )
     return errors
+
+
+def validate_distinct_primary_evidence_for_account(
+    draft: DraftResult, other_messages: list[sqlite3.Row], evidence_signals: list[sqlite3.Row]
+) -> list[str]:
+    """PRD §11.5: when an account has more than one evidence item, each
+    lead's message should lead with a different one. This is the structural
+    check the n-gram/opening-sentence check above couldn't provide: Maya's
+    and Tom's emails at Northwind both led with the case-study facts (fraud
+    scoring, single-digit-ms reads, three regions, 40k TPS) despite
+    different wording, which a text-similarity check alone will not
+    reliably catch - the facts repeat, not the phrasing. `evidence_ids[0]`
+    (the first evidence item cited) is treated as "what this message leads
+    with," matching how the prompt is asked to order them.
+
+    Also rejects citing a sibling's primary evidence at all (not just in
+    first position): an early version checked `evidence_ids[0]` only, and a
+    real recorded draft (Tom's cold email) satisfied that check by leading
+    with his own evidence (s02) while still citing Maya's primary (s01) as a
+    second item - and restating its headline facts in prose anyway. The
+    headline fact a sibling already leads with isn't this message's to use
+    at all when another evidence item is available.
+    """
+    if len(evidence_signals) <= 1 or not draft.evidence_ids:
+        return []
+    primary = draft.evidence_ids[0]
+    for other in other_messages:
+        other_evidence_ids = json.loads(other["evidence_ids"])
+        if not other_evidence_ids:
+            continue
+        other_primary = other_evidence_ids[0]
+        if other_primary == primary:
+            return [
+                f"Message leads with evidence {primary!r}, which is already the lead evidence item in "
+                "another message drafted for this account - lead with a different one"
+            ]
+        if other_primary in draft.evidence_ids:
+            return [
+                f"Message cites {other_primary!r}, the lead evidence item in another message drafted for "
+                "this account - leave it to that message and use a different evidence item here"
+            ]
+    return []
 
 
 def validate_sender_sign_off(draft: DraftResult, variant: str, config: Config) -> list[str]:
@@ -317,7 +365,7 @@ def validate_message(
     company_name: str,
     evidence_signals: list[sqlite3.Row],
     config: Config,
-    other_message_bodies: list[str] | None = None,
+    other_messages: list[sqlite3.Row] | None = None,
 ) -> list[str]:
     errors: list[str] = []
     errors += validate_length(draft, variant, config)
@@ -334,6 +382,7 @@ def validate_message(
     errors += validate_no_ibm_fact_for_practitioner(draft, persona)
     errors += validate_ibm_mention_not_opening(draft)
     errors += validate_ibm_fact_requires_competitor_evidence(draft, evidence_signals)
-    errors += validate_distinct_from_account_siblings(draft, other_message_bodies or [])
+    errors += validate_distinct_from_account_siblings(draft, other_messages or [])
+    errors += validate_distinct_primary_evidence_for_account(draft, other_messages or [], evidence_signals)
     errors += validate_sender_sign_off(draft, variant, config)
     return errors

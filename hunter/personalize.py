@@ -51,18 +51,19 @@ def _first_sentence(text: str) -> str:
     return re.split(r"(?<=[.!?])\s+", text.strip(), maxsplit=1)[0]
 
 
-def _render_other_account_messages_block(conn: sqlite3.Connection, account_id: str, exclude_lead_id: str) -> str:
+def _render_other_account_messages_block(other_messages: list[sqlite3.Row]) -> str:
     """PRD §11.5: colleagues forward these to each other - a message drafted
     for one lead at an account the model has already drafted for shows the
     opening and cited evidence of each sibling, so the model can vary its own
-    opening and lead with different evidence (validators.validate_distinct_from_account_siblings
-    is the deterministic backstop for this same rule).
+    opening and lead with different evidence. The deterministic backstops for
+    this same rule are validators.validate_distinct_from_account_siblings
+    (wording) and validate_distinct_primary_evidence_for_account (which
+    evidence item leads the message).
     """
-    siblings = db.list_messages_for_account(conn, account_id, exclude_lead_id=exclude_lead_id)
-    if not siblings:
+    if not other_messages:
         return "(none)"
     lines = []
-    for m in siblings:
+    for m in other_messages:
         evidence_ids = ", ".join(json.loads(m["evidence_ids"])) or "none"
         lines.append(f"- opens with: \"{_first_sentence(m['body'])}\" (cited evidence: {evidence_ids})")
     return "\n".join(lines)
@@ -97,10 +98,10 @@ def _render_system(spec: PromptSpec, config: Config) -> str:
 def _render_user(
     spec: PromptSpec,
     *,
-    conn: sqlite3.Connection,
     lead: sqlite3.Row,
     account: sqlite3.Row,
     evidence_signals: list[sqlite3.Row],
+    other_messages: list[sqlite3.Row],
     config: Config,
     variant: str,
     previous_interaction: str,
@@ -115,7 +116,7 @@ def _render_user(
         evidence_block=_render_evidence_block(evidence_signals),
         value_props_block=_render_value_props_block(lead["persona"], config),
         context_facts_block=_render_context_facts_block(config, lead["persona"]),
-        other_account_messages_block=_render_other_account_messages_block(conn, account["id"], lead["id"]),
+        other_account_messages_block=_render_other_account_messages_block(other_messages),
     )
 
 
@@ -135,11 +136,9 @@ def draft_message(
     spec = load_prompt_spec(PROMPT_PATH)
     system = _render_system(spec, config)
     evidence_signals = evidence_signals_for_account(conn, account["id"])
-    other_message_bodies = [
-        m["body"] for m in db.list_messages_for_account(conn, account["id"], exclude_lead_id=lead["id"])
-    ]
+    other_messages = db.list_messages_for_account(conn, account["id"], exclude_lead_id=lead["id"])
     user = _render_user(
-        spec, conn=conn, lead=lead, account=account, evidence_signals=evidence_signals,
+        spec, lead=lead, account=account, evidence_signals=evidence_signals, other_messages=other_messages,
         config=config, variant=variant, previous_interaction=previous_interaction,
     )
 
@@ -170,7 +169,7 @@ def draft_message(
         return validators.validate_message(
             draft, variant=variant, persona=lead["persona"], first_name=lead["first_name"],
             company_name=account["name"], evidence_signals=evidence_signals, config=config,
-            other_message_bodies=other_message_bodies,
+            other_messages=other_messages,
         )
 
     draft, model_used, errors = call_once(user)

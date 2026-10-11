@@ -1,0 +1,7 @@
+{
+  "text": "{\"subject\":\"Modernising the shipment-tracking cluster\",\"body\":\"Hi Joris,\\n\\nLumen Logistics' shipment-tracking service writes 2B events/day to DataStax Enterprise 6.8, and your team appears focused on modernising that cluster and cutting operational toil. With DataStax offerings now moving under IBM, it could also be a good moment to review options.\\n\\nScyllaDB provides migration tooling and support for moving live Cassandra/DSE workloads like that one.\\n\\nWould it be useful if I sent a short overview of how that migration path works?\\n\\nOz\\nGTM Engineer, ScyllaDB\\n\\nReply STOP to opt out.\",\"evidence_ids\":[\"s03\"],\"value_prop_ids\":[\"vp_migrate\"],\"context_fact_ids\":[\"cf_ibm\"]}",
+  "tokens_in": 3143,
+  "tokens_out": 762,
+  "model": "claude-opus-5-5",
+  "prompt_version": "personalize.v7"
+}
