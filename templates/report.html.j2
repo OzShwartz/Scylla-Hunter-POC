@@ -18,7 +18,15 @@
 <body>
 <h1>Scylla Hunter Report</h1>
 
-<h2>Funnel</h2>
+<h2>Account funnel</h2>
+<table>
+  <tr><th>Stage</th><th>Count</th></tr>
+  {% for stage in account_funnel_stages %}
+  <tr><td>{{ stage }}</td><td>{{ data.account_funnel[stage] }}</td></tr>
+  {% endfor %}
+</table>
+
+<h2>Lead funnel</h2>
 <table>
   <tr><th>Stage</th><th>Count</th></tr>
   {% for stage in funnel_stages %}

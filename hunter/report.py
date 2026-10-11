@@ -15,6 +15,7 @@ from pathlib import Path
 from hunter import db, hitl
 from hunter.models import Config
 
+ACCOUNT_FUNNEL_STAGES = ["gathered", "qualified", "suppressed", "rejected"]
 FUNNEL_STAGES = ["gathered", "qualified", "drafted", "approved", "sent", "accepted", "emailed"]
 PERSONAS = ["decision_maker", "practitioner"]
 
@@ -27,6 +28,7 @@ QUALIFIED_OR_LATER = {"QUALIFIED", "INVITED", "ACCEPTED", "EMAILED"}
 
 @dataclass
 class ReportData:
+    account_funnel: dict[str, int]
     funnel: dict[str, int]
     engagement: dict
     hitl_summary: dict
@@ -38,6 +40,18 @@ class ReportData:
 
 def _pct(value: float | None) -> str:
     return "n/a" if value is None else f"{value:.0%}"
+
+
+def compute_account_funnel(conn: sqlite3.Connection) -> dict[str, int]:
+    """Discovery starts at the account (PRD §9.1) - this is the funnel one
+    level up from compute_funnel's lead-level one."""
+    accounts = db.list_accounts(conn)
+    return {
+        "gathered": len(accounts),
+        "qualified": sum(1 for a in accounts if a["status"] == "QUALIFIED"),
+        "suppressed": sum(1 for a in accounts if a["status"] == "SUPPRESSED"),
+        "rejected": sum(1 for a in accounts if a["status"] == "REJECTED"),
+    }
 
 
 def compute_funnel(conn: sqlite3.Connection) -> dict[str, int]:
@@ -147,6 +161,7 @@ def run_metadata(conn: sqlite3.Connection) -> dict:
 
 def build_report(conn: sqlite3.Connection, config: Config) -> ReportData:
     return ReportData(
+        account_funnel=compute_account_funnel(conn),
         funnel=compute_funnel(conn),
         engagement=compute_engagement(conn),
         hitl_summary=compute_hitl_summary(conn, config),
@@ -159,7 +174,11 @@ def build_report(conn: sqlite3.Connection, config: Config) -> ReportData:
 
 def render_markdown(data: ReportData) -> str:
     accounts_by_id = {a["id"]: a for a in data.accounts}
-    lines = ["# Scylla Hunter Report", "", "## Funnel", "", "| Stage | Count |", "|---|---|"]
+    lines = ["# Scylla Hunter Report", "", "## Account funnel", "", "| Stage | Count |", "|---|---|"]
+    for stage in ACCOUNT_FUNNEL_STAGES:
+        lines.append(f"| {stage} | {data.account_funnel[stage]} |")
+
+    lines += ["", "## Lead funnel", "", "| Stage | Count |", "|---|---|"]
     for stage in FUNNEL_STAGES:
         lines.append(f"| {stage} | {data.funnel[stage]} |")
 
@@ -221,7 +240,10 @@ def render_html(data: ReportData) -> str:
     env = Environment(loader=FileSystemLoader(str(Path(__file__).resolve().parent.parent / "templates")))
     template = env.get_template("report.html.j2")
     accounts_by_id = {a["id"]: a for a in data.accounts}
-    return template.render(data=data, accounts_by_id=accounts_by_id, funnel_stages=FUNNEL_STAGES, personas=PERSONAS)
+    return template.render(
+        data=data, accounts_by_id=accounts_by_id, account_funnel_stages=ACCOUNT_FUNNEL_STAGES,
+        funnel_stages=FUNNEL_STAGES, personas=PERSONAS,
+    )
 
 
 def write_report(conn: sqlite3.Connection, config: Config, *, html: bool = False) -> ReportData:

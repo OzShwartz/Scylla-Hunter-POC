@@ -60,6 +60,28 @@ def full_funnel_conn(config, tmp_path):
     conn.close()
 
 
+def test_account_funnel_matches_the_fixture_set(full_funnel_conn):
+    """9 accounts: Northwind/Lumen/Kestrel/Brightwave qualified, Quanta/DataStax
+    suppressed, Orbit/Pinecrest/Sprocket rejected (PRD §9.4/§6.2)."""
+    conn, test_config = full_funnel_conn
+    account_funnel = report.compute_account_funnel(conn)
+
+    assert account_funnel == {"gathered": 9, "qualified": 4, "suppressed": 2, "rejected": 3}
+
+
+def test_account_funnel_counts_match_db_counts(full_funnel_conn):
+    conn, test_config = full_funnel_conn
+    account_funnel = report.compute_account_funnel(conn)
+    accounts = db.list_accounts(conn)
+
+    assert account_funnel["gathered"] == len(accounts)
+    assert account_funnel["qualified"] == sum(1 for a in accounts if a["status"] == "QUALIFIED")
+    assert account_funnel["suppressed"] == sum(1 for a in accounts if a["status"] == "SUPPRESSED")
+    assert account_funnel["rejected"] == sum(1 for a in accounts if a["status"] == "REJECTED")
+    # every account is accounted for in exactly one of the three buckets
+    assert account_funnel["qualified"] + account_funnel["suppressed"] + account_funnel["rejected"] == len(accounts)
+
+
 def test_funnel_matches_the_prd_demo_script(full_funnel_conn):
     conn, test_config = full_funnel_conn
     funnel = report.compute_funnel(conn)
@@ -98,6 +120,10 @@ def test_markdown_table_row_counts_match_db_counts(full_funnel_conn):
     conn, test_config = full_funnel_conn
     data = report.build_report(conn, test_config)
     markdown = report.render_markdown(data)
+
+    account_funnel_section = markdown.split("## Account funnel")[1].split("## Lead funnel")[0]
+    assert _table_row_count(account_funnel_section) == len(report.ACCOUNT_FUNNEL_STAGES)
+    assert sum(data.account_funnel[s] for s in ("qualified", "suppressed", "rejected")) == len(db.list_accounts(conn))
 
     accounts_section = markdown.split("## Accounts")[1].split("## Leads")[0]
     assert _table_row_count(accounts_section) == len(db.list_accounts(conn))

@@ -433,7 +433,8 @@ Each requirement has acceptance criteria (AC) that the tests or the demo verify.
 ### Persistence, reporting, evaluation
 
 **FR-10 Report.** `hunter report [--html]` writes `report.md` (primary) and, with `--html`, `report.html`, both from the same `ReportData` so they can never disagree:
-- funnel: gathered → qualified → drafted → approved → sent → accepted → emailed;
+- account funnel (discovery starts at the account, §9.1): gathered → qualified, with suppressed and rejected counts;
+- lead funnel: gathered → qualified → drafted → approved → sent → accepted → emailed;
 - engagement rates by persona and by warm vs cold;
 - HITL summary: auto vs. human counts, counts per routing code (§9.6), and how many messages were edited or rejected;
 - every account with its score breakdown and reason; every lead with company, persona, status and reason;
@@ -634,7 +635,7 @@ The rule logic is identical in all three. Only the source of events and time cha
    - Lior (practitioner) accepts on day 4 → warm email, pending approval (score-based, 78 < 80). Purely technical - no vendor name, no `cf_ibm` - so his is the one email in the batch the content override does not touch.
    - Tom (practitioner), Joris (decision_maker) and Dana (decision_maker) do not accept → cold emails on day 7. Tom's is now purely technical too (score 96 ≥ 80, no vendor name, no `cf_ibm` → **auto-approved and sent**, not forced to review) - the practitioner-angle rule (§11.5) removed the routing gap this case exposed in Phase 4, where Tom's draft had named Astra DB and the acquisition despite being a practitioner. Joris's and Dana's are decision_maker drafts that cite `cf_ibm` as one clause after the main migration/throughput argument, not as the opener - still forced to review by the vendor-name mention (DataStax Enterprise / Astra DB), as intended.
 4. `hunter review` shows Maya's, Joris's and Dana's emails tagged `[SENSITIVE CONTENT]` - three of the five, down from four once the practitioner-angle rule took effect. `hunter approve --all` approves Lior's (score-band) and reports the other three as skipped. Tom's was already sent automatically in step 3. Read each flagged one, then `hunter approve <msg_id>` individually - here, approve all three once reviewed.
-5. `hunter report --html`: the funnel shows 5 invited, 2 accepted, 5 emailed (2 warm, 3 cold); the HITL summary shows 3 auto / 7 human across 10 messages (route codes: `score_ok` 3, `score_band` 4, `sensitive_content` 3); every sent message lists its evidence with source URL and date.
+5. `hunter report --html`: the account funnel shows 9 gathered, 4 qualified, 2 suppressed, 3 rejected; the lead funnel shows 5 invited, 2 accepted, 5 emailed (2 warm, 3 cold); the HITL summary shows 3 auto / 7 human across 10 messages (route codes: `score_ok` 3, `score_band` 4, `sensitive_content` 3); every sent message lists its evidence with source URL and date.
 
 ---
 
