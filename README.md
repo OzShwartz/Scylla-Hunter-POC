@@ -101,7 +101,6 @@ Real output from `examples/run_log.txt` - nothing in this section is invented.
 - **LinkedIn automation or scraping.** Out of scope on legal grounds, not a time constraint.
 - **Live Apollo/people-API calls.** The exact request is generated and logged (`people_query` in the account record); nothing is actually sent.
 - **CRM sync, a UI beyond the report, reply classification, A/B testing.** All production-roadmap items (§20) that need real outcome data this PoC has no way to generate.
-- **`hunter serve` / n8n webhook endpoints (FR-12).** Documented as the production trigger layer (§14.5); not built, since the CLI + simulated clock already exercise the same rule logic.
 
 ## Path to production
 
@@ -139,6 +138,10 @@ GitHub source (live): 10 raw match(es) -> 2 probable user(s), 8 excluded (gh_sky
 | neurodata | `setup/requirements.txt.old` | excluded - stale path | a `.old` file - not a currently-used dependency |
 
 A `probable_user` account gets no firmographics (`employees: null`) → status `NEEDS_ENRICHMENT`, plus a generated people-search query - it's still not scored or contacted; a human enriches and confirms before anything moves forward. Without a token, the command falls back to the committed, dated snapshot (`data/github_snapshot.json` - org/repo-level facts only, no individual contributor data) and says so; the same classification pipeline runs over it either way. See `tests/test_sources.py`, including a test that pins this exact verified table.
+
+## n8n trigger layer (FR-12, optional)
+
+`python -m hunter serve` exposes `POST /events` and `POST /tick` - the exact same trigger logic the CLI's `event`/`simulate` commands call, just reachable over HTTP. `n8n/hunter_triggers.json` wires a webhook (connection accepted → `/events`) and a daily schedule (→ `/tick`); `n8n/README.md` has the exact steps to run it locally with `npx n8n`. Optional - the CLI demo above is the primary path; this just shows how the same core maps onto the stack named in the job description.
 
 ## How this was built
 

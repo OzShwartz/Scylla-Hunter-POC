@@ -377,5 +377,20 @@ def eval_cmd() -> None:
     raise typer.Exit(code=0 if card.passed else 1)
 
 
+@app.command(name="serve")
+def serve_cmd(
+    host: str = typer.Option("127.0.0.1", "--host"),
+    port: int = typer.Option(8000, "--port"),
+) -> None:
+    """FR-12: HTTP endpoints for n8n - POST /events, POST /tick. Same trigger
+    logic as the CLI; only the event/time source changes (PRD §12.2)."""
+    import uvicorn
+
+    from hunter.server import app as fastapi_app
+
+    typer.echo(f"Serving POST /events and POST /tick on http://{host}:{port}")
+    uvicorn.run(fastapi_app, host=host, port=port)
+
+
 if __name__ == "__main__":
     app()

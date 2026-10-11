@@ -107,6 +107,27 @@ def handle_no_accept_after_days(
     return message_id
 
 
+def tick(
+    conn: sqlite3.Connection, config: Config, *, days: int, llm_mode: str, run_id: int | None, now: datetime,
+) -> TriggerStats:
+    """R3 only: once `days` reaches `sequence.R3.days`, fires the cold email
+    for every lead still INVITED. This is the time-based half of `simulate`
+    below, factored out so the server's `POST /tick` (a schedule trigger has
+    no scripted events to replay, only time to check) can call it directly -
+    same function, not a reimplementation.
+    """
+    stats = TriggerStats()
+    r3_days = _rule(config, "R3").days
+    if days >= r3_days:
+        for lead in db.list_leads(conn):
+            if lead["status"] == "INVITED":
+                handle_no_accept_after_days(
+                    conn, config, lead["id"], llm_mode=llm_mode, run_id=run_id,
+                    now=now + timedelta(days=r3_days), stats=stats,
+                )
+    return stats
+
+
 def simulate(
     conn: sqlite3.Connection, config: Config, *, days: int, llm_mode: str, run_id: int | None, now: datetime,
     scripted_events: list[SimulatedEvent],
@@ -114,13 +135,13 @@ def simulate(
     """PRD §12.2/§12.3: advance the simulated clock to `days` days after each
     lead's invite was sent. Scripted `connection_accepted` events due by then
     fire R2 in day order; any lead still INVITED once `days` reaches
-    `sequence.R3.days` gets R3's cold email. Calling this again with a larger
-    `days` only processes what's newly due - already-ACCEPTED/EMAILED leads
-    are skipped by the same status guard `handle_*` always uses, so repeated
-    or overlapping `simulate` calls are idempotent.
+    `sequence.R3.days` gets R3's cold email (via `tick`, above). Calling this
+    again with a larger `days` only processes what's newly due -
+    already-ACCEPTED/EMAILED leads are skipped by the same status guard
+    `handle_*` always uses, so repeated or overlapping `simulate` calls are
+    idempotent.
     """
     stats = TriggerStats()
-    r3_days = _rule(config, "R3").days
 
     due = sorted(
         (e for e in scripted_events if e.event == "connection_accepted" and e.day is not None and e.day <= days),
@@ -132,12 +153,11 @@ def simulate(
             now=now + timedelta(days=e.day), stats=stats,
         )
 
-    if days >= r3_days:
-        for lead in db.list_leads(conn):
-            if lead["status"] == "INVITED":
-                handle_no_accept_after_days(
-                    conn, config, lead["id"], llm_mode=llm_mode, run_id=run_id,
-                    now=now + timedelta(days=r3_days), stats=stats,
-                )
+    tick_stats = tick(conn, config, days=days, llm_mode=llm_mode, run_id=run_id, now=now)
+    stats.llm_calls += tick_stats.llm_calls
+    stats.tokens_in += tick_stats.tokens_in
+    stats.tokens_out += tick_stats.tokens_out
+    stats.cold_drafted.extend(tick_stats.cold_drafted)
+    stats.forced_review.extend(tick_stats.forced_review)
 
     return stats

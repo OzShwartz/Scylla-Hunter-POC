@@ -1,5 +1,4 @@
 # Scylla Hunter dependencies. Stdlib sqlite3 is used for persistence (no DB driver needed).
-# fastapi/uvicorn are added later, only when `hunter serve` (PRD FR-12) is built.
 typer==0.27.3
 pydantic==2.14.0
 PyYAML==6.0.3
@@ -7,3 +6,8 @@ Jinja2==3.1.6
 anthropic==1.13.0
 python-dotenv==1.2.4
 pytest==9.1.1
+# fastapi/uvicorn: only `hunter serve` (PRD FR-12) uses these. httpx is fastapi's
+# TestClient dependency, used only in tests/test_server.py.
+fastapi==0.143.0
+uvicorn==0.54.0
+httpx==0.28.1

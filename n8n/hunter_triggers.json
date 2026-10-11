@@ -1,0 +1,98 @@
+{
+  "name": "Scylla Hunter triggers",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "connection-accepted",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "a1b1c1d1-0001-4a1a-9a1a-000000000001",
+      "name": "Webhook: connection accepted",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "hunter-connection-accepted"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/events",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"type\": \"connection_accepted\", \"lead_id\": $json.body.lead_id } }}",
+        "options": {}
+      },
+      "id": "a1b1c1d1-0002-4a1a-9a1a-000000000002",
+      "name": "POST /events",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "a1b1c1d1-0003-4a1a-9a1a-000000000003",
+      "name": "Schedule: daily tick",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/tick",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"days\": 7 } }}",
+        "options": {}
+      },
+      "id": "a1b1c1d1-0004-4a1a-9a1a-000000000004",
+      "name": "POST /tick",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 500]
+    }
+  ],
+  "connections": {
+    "Webhook: connection accepted": {
+      "main": [
+        [
+          {
+            "node": "POST /events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule: daily tick": {
+      "main": [
+        [
+          {
+            "node": "POST /tick",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

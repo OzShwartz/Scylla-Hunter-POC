@@ -453,7 +453,8 @@ Each requirement has acceptance criteria (AC) that the tests or the demo verify.
 **FR-11 Database.** SQLite, schema in §13.
 - AC: `hunter reset` recreates an empty DB.
 
-**FR-12 Trigger endpoint for n8n** **[beyond the brief]**. `hunter serve` exposes `POST /events` (for example connection_accepted) and `POST /tick` (process time-based rules). The n8n workflow export in `n8n/` calls them.
+**FR-12 Trigger endpoint for n8n** **[beyond the brief]**. `hunter serve` exposes `POST /events` (for example connection_accepted) and `POST /tick` (process time-based rules) - thin FastAPI wrappers over the same `hunter/triggers.py` functions the CLI calls, then the same `hunter/dispatch.py` sweep. The n8n workflow export in `n8n/hunter_triggers.json` calls them from a webhook and a schedule trigger; `n8n/README.md` has exact run steps.
+- AC: importing the workflow and calling its webhook produces the same DB result as the equivalent CLI command (`tests/test_server.py` proves this at the code level - a paired DB built the same way, driven once over HTTP and once directly, compared field for field).
 - AC: importing the workflow and calling its webhook produces the same DB result as the CLI command.
 
 **FR-13 Evaluation** **[beyond the brief]**. `hunter eval` compares extraction and selection to `_expected` and checks message validators and grounding. It prints a scorecard and exits non-zero on regression.
@@ -1112,6 +1113,7 @@ scylla-hunter/
 | `test_triggers` | R2/R3 handlers and `simulate`, against monkeypatched LLM responses |
 | `test_report` | Funnel matches §12.3; every rendered table's row count equals the matching DB count |
 | `test_sources` | GitHub classification (fork/archived, stale path, competitor, integration, probable_user) against the verified table; snapshot fallback; no individual-level fields |
+| `test_server` | `POST /events`/`POST /tick` produce the same DB state as the equivalent direct trigger call; unsupported event type; no-op for a lead not invited |
 
 ### 18.2 Definition of done
 
