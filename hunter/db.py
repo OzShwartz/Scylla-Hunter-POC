@@ -183,6 +183,10 @@ def update_run_counts(
     conn.commit()
 
 
+def list_runs(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    return conn.execute("SELECT * FROM runs ORDER BY id").fetchall()
+
+
 # ---------------------------------------------------------------------------
 # accounts
 # ---------------------------------------------------------------------------

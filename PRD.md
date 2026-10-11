@@ -432,14 +432,15 @@ Each requirement has acceptance criteria (AC) that the tests or the demo verify.
 
 ### Persistence, reporting, evaluation
 
-**FR-10 Report.** `hunter report` writes `report.md` (primary) and `report.html`, both from the same data:
+**FR-10 Report.** `hunter report [--html]` writes `report.md` (primary) and, with `--html`, `report.html`, both from the same `ReportData` so they can never disagree:
 - funnel: gathered → qualified → drafted → approved → sent → accepted → emailed;
 - engagement rates by persona and by warm vs cold;
-- every account and lead with status, score breakdown and reason;
-- every "sent" message with its evidence;
+- HITL summary: auto vs. human counts, counts per routing code (§9.6), and how many messages were edited or rejected;
+- every account with its score breakdown and reason; every lead with company, persona, status and reason;
+- every "sent" message with its channel, route and the evidence items it cites (id, type, source URL, date);
 - live discovered accounts, if any;
 - run metadata: prompt versions, models, LLM calls and tokens.
-- AC: the report contains every lead in the DB, and its counts equal the DB counts.
+- AC: the report contains every lead in the DB, and its counts equal the DB counts (`hunter/report.py`'s `build_report` reads the same six tables `hunter eval` and the CLI already read - no separate derivation to drift from them; `tests/test_report.py` asserts the funnel matches §12.3 exactly and that every rendered table's row count equals the matching `db.list_*` count).
 
 **FR-11 Database.** SQLite, schema in §13.
 - AC: `hunter reset` recreates an empty DB.
@@ -633,7 +634,7 @@ The rule logic is identical in all three. Only the source of events and time cha
    - Lior (practitioner) accepts on day 4 → warm email, pending approval (score-based, 78 < 80). Purely technical - no vendor name, no `cf_ibm` - so his is the one email in the batch the content override does not touch.
    - Tom (practitioner), Joris (decision_maker) and Dana (decision_maker) do not accept → cold emails on day 7. Tom's is now purely technical too (score 96 ≥ 80, no vendor name, no `cf_ibm` → **auto-approved and sent**, not forced to review) - the practitioner-angle rule (§11.5) removed the routing gap this case exposed in Phase 4, where Tom's draft had named Astra DB and the acquisition despite being a practitioner. Joris's and Dana's are decision_maker drafts that cite `cf_ibm` as one clause after the main migration/throughput argument, not as the opener - still forced to review by the vendor-name mention (DataStax Enterprise / Astra DB), as intended.
 4. `hunter review` shows Maya's, Joris's and Dana's emails tagged `[SENSITIVE CONTENT]` - three of the five, down from four once the practitioner-angle rule took effect. `hunter approve --all` approves Lior's (score-band) and reports the other three as skipped. Tom's was already sent automatically in step 3. Read each flagged one, then `hunter approve <msg_id>` individually - here, approve all three once reviewed.
-5. `hunter report` (FR-10, not yet built - Phase 5): the funnel will show 5 invited, 2 accepted, 5 emailed (2 warm, 3 cold) - confirmed via direct DB query (`leads` status counts, `messages` SENT counts, `outbox.jsonl` line count) ahead of `report.md` existing.
+5. `hunter report --html`: the funnel shows 5 invited, 2 accepted, 5 emailed (2 warm, 3 cold); the HITL summary shows 3 auto / 7 human across 10 messages (route codes: `score_ok` 3, `score_band` 4, `sensitive_content` 3); every sent message lists its evidence with source URL and date.
 
 ---
 
@@ -1101,6 +1102,7 @@ scylla-hunter/
 | `test_hitl_cli` | review / approve / reject / edit, and `--all` skipping sensitive content |
 | `test_dispatch` | Dry-run send, outbox.jsonl, lead status advance, idempotent re-dispatch |
 | `test_triggers` | R2/R3 handlers and `simulate`, against monkeypatched LLM responses |
+| `test_report` | Funnel matches §12.3; every rendered table's row count equals the matching DB count |
 
 ### 18.2 Definition of done
 

@@ -16,6 +16,8 @@ runtime:
   approval_mode: threshold       # all | threshold | off   (see hitl)
   db_path: "hunter.db"
   outbox_path: "examples/outbox.jsonl"
+  report_path: "examples/report.md"
+  report_html_path: "examples/report.html"
 
 llm:
   mode: replay                   # replay (default, no key) | live (needs ANTHROPIC_API_KEY)

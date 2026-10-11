@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from hunter import db, dispatch, evaluate, hitl, scoring, sources, triggers
 from hunter import extract as extract_mod
 from hunter import personalize as personalize_mod
+from hunter import report as report_mod
 from hunter.llm import ReplayMissError
 from hunter.models import load_config
 
@@ -325,6 +326,20 @@ def simulate(
     dispatch_stats = dispatch.dispatch_approved(conn, config, run_id=run_id, now=datetime.now())
     if dispatch_stats.sent_message_ids:
         typer.echo(f"\n{len(dispatch_stats.sent_message_ids)} message(s) dispatched (dry-run) - see outbox.jsonl")
+    conn.close()
+
+
+@app.command(name="report")
+def report_cmd(
+    html: bool = typer.Option(False, "--html", help="Also write the HTML report"),
+) -> None:
+    """FR-10: write report.md (and, with --html, report.html) from the database."""
+    config = load_config()
+    conn = db.connect(config.runtime.db_path)
+    report_mod.write_report(conn, config, html=html)
+    typer.echo(f"Wrote {config.runtime.report_path}")
+    if html:
+        typer.echo(f"Wrote {config.runtime.report_html_path}")
     conn.close()
 
 

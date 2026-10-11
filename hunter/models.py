@@ -41,6 +41,8 @@ class RuntimeConfig(BaseModel):
     approval_mode: Literal["all", "threshold", "off"]
     db_path: str
     outbox_path: str
+    report_path: str
+    report_html_path: str
 
 
 class LLMModelsConfig(BaseModel):

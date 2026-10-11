@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Scylla Hunter Report</title>
+<style>
+  body { font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
+  h1 { border-bottom: 2px solid #333; padding-bottom: 0.3rem; }
+  h2 { margin-top: 2.5rem; border-bottom: 1px solid #ccc; padding-bottom: 0.2rem; }
+  h3 { margin-top: 1.5rem; font-size: 1.05rem; }
+  table { border-collapse: collapse; width: 100%; margin: 0.75rem 0 1.5rem; font-size: 0.9rem; }
+  th, td { border: 1px solid #ddd; padding: 0.4rem 0.6rem; text-align: left; vertical-align: top; }
+  th { background: #f5f5f5; }
+  code { background: #f0f0f0; padding: 0.1rem 0.3rem; border-radius: 3px; }
+  .muted { color: #666; }
+</style>
+</head>
+<body>
+<h1>Scylla Hunter Report</h1>
+
+<h2>Funnel</h2>
+<table>
+  <tr><th>Stage</th><th>Count</th></tr>
+  {% for stage in funnel_stages %}
+  <tr><td>{{ stage }}</td><td>{{ data.funnel[stage] }}</td></tr>
+  {% endfor %}
+</table>
+
+<h2>Engagement</h2>
+<p>
+  Overall invite accept rate: <strong>{{ "%.0f%%" | format(data.engagement.overall_accept_rate * 100) if data.engagement.overall_accept_rate is not none else "n/a" }}</strong><br>
+  Warm emails sent: {{ data.engagement.warm_sent }} &middot; Cold emails sent: {{ data.engagement.cold_sent }}
+</p>
+<table>
+  <tr><th>Persona</th><th>Invited</th><th>Accepted</th><th>Accept rate</th></tr>
+  {% for persona in personas %}
+  {% set stats = data.engagement.by_persona[persona] %}
+  <tr>
+    <td>{{ persona }}</td><td>{{ stats.invited }}</td><td>{{ stats.accepted }}</td>
+    <td>{{ "%.0f%%" | format(stats.accept_rate * 100) if stats.accept_rate is not none else "n/a" }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h2>HITL summary</h2>
+<p>
+  Auto-approved: {{ data.hitl_summary.by_route.get("auto", 0) }} &middot;
+  Human-approved: {{ data.hitl_summary.by_route.get("human", 0) }}<br>
+  Edited: {{ data.hitl_summary.edits }} &middot; Rejected: {{ data.hitl_summary.rejections }}
+</p>
+<table>
+  <tr><th>Route code</th><th>Count</th></tr>
+  {% for code, count in data.hitl_summary.by_code.items() | sort %}
+  <tr><td><code>{{ code }}</code></td><td>{{ count }}</td></tr>
+  {% endfor %}
+</table>
+
+<h2>Accounts</h2>
+<table>
+  <tr><th>Account</th><th>Score</th><th>Status</th><th>Reason</th></tr>
+  {% for a in data.accounts %}
+  <tr><td>{{ a.name }}</td><td>{{ a.account_score }}</td><td>{{ a.status }}</td><td class="muted">{{ a.reason }}</td></tr>
+  {% endfor %}
+</table>
+
+<h2>Leads</h2>
+<table>
+  <tr><th>Lead</th><th>Company</th><th>Persona</th><th>Status</th><th>Reason</th></tr>
+  {% for lead in data.leads %}
+  {% set account = accounts_by_id.get(lead.account_id) %}
+  <tr>
+    <td>{{ lead.first_name }} {{ lead.last_name }}</td>
+    <td>{{ account.name if account else lead.account_id }}</td>
+    <td>{{ lead.persona or "-" }}</td>
+    <td>{{ lead.status }}</td>
+    <td class="muted">{{ lead.reason }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h2>Sent messages</h2>
+{% for m in data.sent_messages %}
+<h3>msg#{{ m.message_id }} - {{ m.lead }} @ {{ m.account }} ({{ m.channel }}/{{ m.variant }}, route={{ m.approval_route }})</h3>
+{% if m.evidence %}
+<table>
+  <tr><th>Evidence</th><th>Type</th><th>Source</th><th>Date</th></tr>
+  {% for e in m.evidence %}
+  <tr><td>{{ e.id }}</td><td>{{ e.type }}</td><td>{{ e.source_url }}</td><td>{{ e.published_at }}</td></tr>
+  {% endfor %}
+</table>
+{% else %}
+<p class="muted">(no evidence cited)</p>
+{% endif %}
+{% endfor %}
+
+<h2>Run metadata</h2>
+<p>
+  Runs: {{ data.run_meta.runs }}<br>
+  LLM calls: {{ data.run_meta.llm_calls }} ({{ data.run_meta.tokens_in }} in / {{ data.run_meta.tokens_out }} out tokens)<br>
+  Models: {{ data.run_meta.models | join(", ") or "none" }}<br>
+  Prompt versions: {{ data.run_meta.prompt_versions | join(", ") or "none" }}
+</p>
+
+</body>
+</html>
