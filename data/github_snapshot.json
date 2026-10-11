@@ -1,0 +1,105 @@
+{
+  "as_of": "2026-10-08",
+  "matches": [
+    {
+      "org_login": "sky-uk",
+      "repo_full_name": "sky-uk/cqlmigrate",
+      "repo_html_url": "https://github.com/sky-uk/cqlmigrate",
+      "query": "com.datastax.oss language:Java",
+      "matched_path": "src/main/java/uk/sky/cqlmigrate/CqlLoader.java",
+      "is_fork": false,
+      "is_archived": false,
+      "description": "Cassandra schema migration library"
+    },
+    {
+      "org_login": "stargate",
+      "repo_full_name": "stargate/stargate",
+      "repo_html_url": "https://github.com/stargate/stargate",
+      "query": "com.datastax.oss language:Java",
+      "matched_path": "coordinator/testing/src/main/java/io/stargate/it/cql/UdfTest.java",
+      "is_fork": false,
+      "is_archived": false,
+      "description": "An open source data gateway"
+    },
+    {
+      "org_login": "thelastpickle",
+      "repo_full_name": "thelastpickle/cassandra-reaper",
+      "repo_html_url": "https://github.com/thelastpickle/cassandra-reaper",
+      "query": "com.datastax.oss language:Java",
+      "matched_path": "src/server/src/main/java/io/cassandrareaper/AppContext.java",
+      "is_fork": false,
+      "is_archived": false,
+      "description": "Automated Repair Awesomeness for Apache Cassandra"
+    },
+    {
+      "org_login": "quintoandar",
+      "repo_full_name": "quintoandar/butterfree",
+      "repo_html_url": "https://github.com/quintoandar/butterfree",
+      "query": "cassandra-driver filename:requirements.txt",
+      "matched_path": "requirements.txt",
+      "is_fork": false,
+      "is_archived": false,
+      "description": "A tool for building feature stores."
+    },
+    {
+      "org_login": "alibaba",
+      "repo_full_name": "alibaba/loongsuite-python",
+      "repo_html_url": "https://github.com/alibaba/loongsuite-python",
+      "query": "cassandra-driver filename:requirements.txt",
+      "matched_path": "docs-requirements.txt",
+      "is_fork": false,
+      "is_archived": false,
+      "description": null
+    },
+    {
+      "org_login": "neurodata",
+      "repo_full_name": "neurodata/ndstore",
+      "repo_html_url": "https://github.com/neurodata/ndstore",
+      "query": "cassandra-driver filename:requirements.txt",
+      "matched_path": "setup/requirements.txt.old",
+      "is_fork": false,
+      "is_archived": false,
+      "description": "code for storing neurodata images and image annotations"
+    },
+    {
+      "org_login": "Dataherald",
+      "repo_full_name": "Dataherald/dataherald",
+      "repo_html_url": "https://github.com/Dataherald/dataherald",
+      "query": "astrapy filename:requirements.txt",
+      "matched_path": "services/engine/requirements.txt",
+      "is_fork": false,
+      "is_archived": false,
+      "description": "Interact with your SQL database, Natural Language to SQL using LLMs"
+    },
+    {
+      "org_login": "rocketride-org",
+      "repo_full_name": "rocketride-org/rocketride-server",
+      "repo_html_url": "https://github.com/rocketride-org/rocketride-server",
+      "query": "astrapy filename:requirements.txt",
+      "matched_path": "nodes/src/nodes/store_astra/requirements.txt",
+      "is_fork": false,
+      "is_archived": false,
+      "description": "High-performance AI pipeline engine with a C++ core and 50+ Python-extensible nodes. Build, debug, and scale LLM workflows with 13+ model providers, 8+ vector databases, and agent orchestration, all from your IDE. Includes VS Code extension, TypeScript/Python SDKs, and Docker deployment."
+    },
+    {
+      "org_login": "AI-Northstar-Tech",
+      "repo_full_name": "AI-Northstar-Tech/vector-io",
+      "repo_html_url": "https://github.com/AI-Northstar-Tech/vector-io",
+      "query": "astrapy filename:requirements.txt",
+      "matched_path": "requirements.txt",
+      "is_fork": false,
+      "is_archived": false,
+      "description": "Comprehensive Vector Data Tooling. The universal interface for all vector database, datasets and RAG platforms. Easily export, import, backup, re-embed (using any model) or access your vector data from any vector databases or repository."
+    },
+    {
+      "org_login": "deepset-ai",
+      "repo_full_name": "deepset-ai/haystack-core-integrations",
+      "repo_html_url": "https://github.com/deepset-ai/haystack-core-integrations",
+      "query": "astrapy filename:requirements.txt",
+      "matched_path": "integrations/astra/examples/requirements.txt",
+      "is_fork": false,
+      "is_archived": false,
+      "description": "Additional packages (components, document stores and the likes) to extend the capabilities of Haystack"
+    }
+  ]
+}

@@ -174,6 +174,11 @@ class GitHubSourceConfig(BaseModel):
     max_results_per_query: int
     owner_type: str
     exclude_if_repo_mentions: list[str]
+    competitor_orgs: list[str] = []
+    exclude_if_path_contains: list[str] = []
+    exclude_if_repo_name_contains: list[str] = []
+    exclude_if_path_ends_with: list[str] = []
+    verified_integration_orgs: dict[str, str] = {}
 
 
 class CampaignConfig(BaseModel):

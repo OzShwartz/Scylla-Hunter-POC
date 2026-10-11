@@ -145,4 +145,31 @@ github_source:
   max_results_per_query: 5
   owner_type: "Organization"     # ignore personal repos
   exclude_if_repo_mentions: ["scylla"]   # likely already a ScyllaDB user -> flag, do not target
+  # Verified DataStax-owned or DataStax-acquired orgs (not a guess - see AI_WORKFLOW.md for the
+  # sourcing on each): stargate was founded by DataStax engineers and the majority of its initial
+  # development was DataStax-sponsored (contributions require DataStax's CLA); thelastpickle was
+  # acquired by DataStax in March 2020 (DataStax press release, dbta.com, thelastpickle.com's own
+  # announcement). A repo under one of these orgs proves the org *is* the competitor, not a target.
+  competitor_orgs: ["datastax", "stargate", "thelastpickle"]
+  # A match under one of these path segments, or a repo name containing one of these words, is an
+  # integration/connector/sample shipped *for* users of the dependency - it proves the dependency
+  # exists, not that this org runs it as their own database.
+  exclude_if_path_contains: ["integrations/", "connectors/", "examples/", "docs/", "tests/", "tutorials/"]
+  exclude_if_repo_name_contains: ["integration", "connector", "sdk", "example", "demo"]
+  # A matched path ending in one of these looks like a stale or superseded dependency
+  # declaration, not a currently-used one (e.g. requirements.txt.old).
+  exclude_if_path_ends_with: [".old", ".bak", ".orig"]
+  # Orgs individually verified (by reading the actual repo/requirements file, not guessed - see
+  # AI_WORKFLOW.md for the evidence on each) to be multi-backend tools or instrumentation
+  # libraries where a DataStax/Cassandra dependency is one of many supported backends, not this
+  # org's own database. The generic path/name filters above don't happen to catch these because
+  # each project names its integration module differently (a pluggable "node", a driver entry in
+  # a long requirements.txt, an auto-instrumentation package) - this list exists because a fixed
+  # keyword list cannot anticipate every such name, not because the generic filter was wrong.
+  verified_integration_orgs:
+    rocketride-org: "store_astra is 1 of 8+ pluggable storage-backend nodes (store_pinecone, store_qdrant, store_milvus, store_postgres, ...) in a swappable pipeline engine"
+    AI-Northstar-Tech: "vector-io is a universal multi-vector-database interface; Astra DB is 1 of 9 supported backends alongside Pinecone/Qdrant/Milvus"
+    alibaba: "loongsuite-python is an OpenTelemetry-style instrumentation library; its Cassandra package is 1 of dozens of per-library auto-instrumentation modules (Postgres, MySQL, Redis, MongoDB, ...)"
+    Dataherald: "the matched requirements.txt lists astrapy alongside 12+ other database connectors (Postgres, MySQL, Snowflake, BigQuery, Databricks, ...) in a natural-language-to-SQL engine that supports many backends"
   # live accounts have no firmographics -> account status NEEDS_ENRICHMENT + generated people-search query
+  # without a token, falls back to the committed, dated snapshot (data/github_snapshot.json)

@@ -63,20 +63,22 @@ def run(
         token = os.environ.get("GITHUB_TOKEN")
         if not token:
             typer.echo(
-                "--source github: GITHUB_TOKEN is not set in .env - skipping the live GitHub source "
-                "(see .env.example / PRD §5.2, FR-2). The fixture run is unaffected."
+                "--source github: GITHUB_TOKEN is not set in .env - using the committed, dated "
+                f"snapshot ({sources.SNAPSHOT_PATH}) instead of a live search (see .env.example / "
+                "PRD §5.2, FR-2 to enable live search)."
             )
-        else:
-            try:
-                github_account_ids = sources.run_github_source(
-                    conn, config.github_source, token=token, as_of=config.as_of
-                )
-                typer.echo(
-                    f"Live discovered accounts (github): {len(github_account_ids)}"
-                    + (f" ({', '.join(github_account_ids)})" if github_account_ids else "")
-                )
-            except sources.GitHubSourceError as e:
-                typer.echo(f"--source github: {e}", err=True)
+        try:
+            github_account_ids, classified, mode = sources.run_github_source(
+                conn, config.github_source, token=token, as_of=config.as_of
+            )
+            excluded = len(classified) - len(github_account_ids)
+            typer.echo(
+                f"GitHub source ({mode}): {len(classified)} raw match(es) -> {len(github_account_ids)} probable "
+                f"user(s), {excluded} excluded"
+                + (f" ({', '.join(github_account_ids)})" if github_account_ids else "")
+            )
+        except sources.GitHubSourceError as e:
+            typer.echo(f"--source github: {e}", err=True)
 
     try:
         stats = extract_mod.extract_signals(conn, fixtures, config, llm_mode=llm_mode)

@@ -73,7 +73,7 @@ Real output from `examples/run_log.txt` - nothing in this section is invented.
 
 ## How quality is measured
 
-`hunter eval` scores every run against fixture `_expected` values - never read by the pipeline itself, only by the evaluator: **32/32** extraction fields, **13/13** lead selections, **10/10** grounded messages. **141 automated tests** cover scoring, gates, validators, HITL routing, triggers, dispatch, the report, and the GitHub source. Grounding is enforced in code, not just prompted: every `evidence_quote` must be a verbatim substring of the source text, every cited evidence id must exist and belong to the lead's account, and every named person must actually appear in the source.
+`hunter eval` scores every run against fixture `_expected` values - never read by the pipeline itself, only by the evaluator: **32/32** extraction fields, **13/13** lead selections, **10/10** grounded messages. **152 automated tests** cover scoring, gates, validators, HITL routing, triggers, dispatch, the report, and the GitHub source. Grounding is enforced in code, not just prompted: every `evidence_quote` must be a verbatim substring of the source text, every cited evidence id must exist and belong to the lead's account, and every named person must actually appear in the source.
 
 ## Key decisions
 
@@ -117,14 +117,28 @@ Full version: **[PRD.md §14.5](PRD.md#145-infrastructure)**, **[§20](PRD.md#20
 
 ## GitHub live source (FR-2)
 
-`python -m hunter run --source github`, with `GITHUB_TOKEN` in `.env`, runs the configured code-search queries (`com.datastax.oss`, `cassandra-driver`, `astrapy`) against the real GitHub API and maps matching organization-owned repos to accounts. Real output from a live run:
+`python -m hunter run --source github` runs the configured code-search queries (`com.datastax.oss`, `cassandra-driver`, `astrapy`) against the real GitHub API (`GITHUB_TOKEN` in `.env`) and classifies every organization-owned match before any of it becomes an account - a raw code match is noise, not a lead, until it's filtered. Real output from a live run:
 
 ```
-Live discovered accounts (github): 10 (gh_sky-uk, gh_stargate, gh_thelastpickle, gh_quintoandar,
-  gh_alibaba, gh_neurodata, gh_Dataherald, gh_rocketride-org, gh_AI-Northstar-Tech, gh_deepset-ai)
+GitHub source (live): 10 raw match(es) -> 2 probable user(s), 8 excluded (gh_sky-uk, gh_quintoandar)
 ```
 
-Each becomes an account with no firmographics (`employees: null`) → status `NEEDS_ENRICHMENT`, plus a generated people-search query (17 target titles) - neither is scored or contacted; both need a human to enrich and confirm before anything moves forward. A repo whose description also mentions "scylla" is excluded outright (already a prospect, not a target) - none did in this run. Two names above are a useful reminder that raw search hits need a human filter before any of this is a real lead: `stargate` is DataStax's own project, and `thelastpickle` is a known Cassandra consultancy - exactly the kind of false positive `NEEDS_ENRICHMENT` exists to catch before outreach, not after. Without a token, the command explains that and runs the fixtures unaffected - see `tests/test_sources.py`.
+**10 raw matches → 2 probable users.** Every exclusion was individually verified against the actual matched file, not assumed - that's the point of this funnel:
+
+| Org | Matched path | Verdict | Reason |
+|---|---|---|---|
+| sky-uk | `src/.../cqlmigrate/CqlLoader.java` | **probable user** | their own Cassandra schema-migration tool |
+| quintoandar | `requirements.txt` | **probable user** | their own feature-store tool, root-level dependency |
+| stargate | `coordinator/testing/.../UdfTest.java` | excluded - competitor | DataStax-sponsored project (DataStax CLA governs contributions) |
+| thelastpickle | `src/server/.../AppContext.java` | excluded - competitor | acquired by DataStax, March 2020 |
+| deepset-ai | `integrations/astra/examples/requirements.txt` | excluded - integration | path is literally under `integrations/.../examples/` |
+| rocketride-org | `nodes/.../store_astra/requirements.txt` | excluded - integration | `store_astra` is 1 of 8+ pluggable storage-backend nodes (also `store_pinecone`, `store_qdrant`, ...) |
+| AI-Northstar-Tech | `requirements.txt` | excluded - integration | a universal multi-vector-DB interface; Astra DB is 1 of 9 supported backends |
+| alibaba | `docs-requirements.txt` | excluded - integration | an OpenTelemetry-style instrumentation library; Cassandra is 1 of dozens of per-library modules |
+| Dataherald | `services/engine/requirements.txt` | excluded - integration | that file lists `astrapy` alongside 12+ other DB connectors (Postgres, MySQL, Snowflake, ...) |
+| neurodata | `setup/requirements.txt.old` | excluded - stale path | a `.old` file - not a currently-used dependency |
+
+A `probable_user` account gets no firmographics (`employees: null`) → status `NEEDS_ENRICHMENT`, plus a generated people-search query - it's still not scored or contacted; a human enriches and confirms before anything moves forward. Without a token, the command falls back to the committed, dated snapshot (`data/github_snapshot.json` - org/repo-level facts only, no individual contributor data) and says so; the same classification pipeline runs over it either way. See `tests/test_sources.py`, including a test that pins this exact verified table.
 
 ## How this was built
 

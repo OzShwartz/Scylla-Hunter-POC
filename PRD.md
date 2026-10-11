@@ -393,10 +393,15 @@ Each requirement has acceptance criteria (AC) that the tests or the demo verify.
 **FR-1 Load fixtures.** Load accounts, raw signals and people from `data/fixtures.json`. Fields starting with `_expected` are never read by the pipeline, only by `eval`.
 - AC: a run with fixtures loads 9 accounts, 10 raw signals, 13 people.
 
-**FR-2 Live source: GitHub code search** **[opt-in]**. With `GITHUB_TOKEN` and `--source github`, run the configured code-search queries, keep organization-owned repos, map each org to an account, and store a `github_code` signal with the repo URL.
-- Repos that also mention "scylla" are flagged as likely ScyllaDB users and not targeted.
-- Live accounts have no firmographics, so they get `NEEDS_ENRICHMENT` plus a generated people-search query (FR-4).
-- AC: with a token, at least one real account appears in the report under "Live discovered accounts"; without a token, the command explains how to enable it and the fixture run is unaffected.
+**FR-2 Live source: GitHub code search** **[opt-in]**. With `--source github`, run the configured code-search queries (live, with `GITHUB_TOKEN`; otherwise against the committed, dated snapshot `data/github_snapshot.json` - org/repo-level facts only, never an individual contributor's name or any other personal field). Every match is then **classified**, in order, before any of it becomes an account:
+1. fork or archived → excluded (not an active, original codebase);
+2. matched path looks stale/superseded (`exclude_if_path_ends_with`, e.g. `requirements.txt.old`) → excluded;
+3. repo description also mentions "scylla" → excluded (likely already a ScyllaDB user, not a target - the original rule);
+4. the org is in `competitor_orgs` (verified DataStax-owned/-acquired orgs - see AI_WORKFLOW.md for the sourcing on each entry) → excluded as competitor-affiliated;
+5. the matched path or repo name looks like an integration/connector/example (`exclude_if_path_contains`, `exclude_if_repo_name_contains`), or the org is in `verified_integration_orgs` (individually confirmed multi-backend tools whose own naming the generic rule in this step doesn't happen to catch) → excluded as integration - proves a connector exists, not that the org runs the dependency themselves;
+6. otherwise → `probable_user`, and only then does it become an account.
+- Only a `probable_user` account is created, with no firmographics (`employees` stays null), so it gets `NEEDS_ENRICHMENT` plus a generated people-search query (FR-4).
+- AC: with a token, at least one real account appears in the report under "Live discovered accounts"; without a token, the command uses the snapshot and says so, and the fixture run is unaffected either way. The report and `hunter run`'s console output show, per the classified set, how many raw matches became how many probable users and how many were excluded (and why).
 
 **FR-3 Extract signals (LLM).** For each raw signal text, the LLM returns a structured evidence record (§11.3). Code validates it, and the record is stored in `signals`.
 - AC: the Pinecrest job post is extracted as `uses_cassandra = false`.
@@ -1044,7 +1049,7 @@ scylla-hunter/
                        personalize.py validators.py hitl.py triggers.py
                        dispatch.py report.py evaluate.py llm.py server.py
   prompts/             extract_signals.md  personalize.md
-  data/                fixtures.json  llm_replay/
+  data/                fixtures.json  llm_replay/  github_snapshot.json
   templates/           report.html.j2
   n8n/                 hunter_triggers.json  screenshot.png
   examples/            report.md report.html outbox.jsonl run_log.txt hunter.db
@@ -1106,6 +1111,7 @@ scylla-hunter/
 | `test_dispatch` | Dry-run send, outbox.jsonl, lead status advance, idempotent re-dispatch |
 | `test_triggers` | R2/R3 handlers and `simulate`, against monkeypatched LLM responses |
 | `test_report` | Funnel matches §12.3; every rendered table's row count equals the matching DB count |
+| `test_sources` | GitHub classification (fork/archived, stale path, competitor, integration, probable_user) against the verified table; snapshot fallback; no individual-level fields |
 
 ### 18.2 Definition of done
 
