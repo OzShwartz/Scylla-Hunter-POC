@@ -1,7 +1,0 @@
-{
-  "text": "{\"subject\":\"Fraud scoring reads across three regions\",\"body\":\"Hi Maya,\\n\\nThanks for connecting. I read that Northwind Payments runs fraud scoring on Astra DB, needing single-digit millisecond reads across three regions at 40k transactions per second.\\n\\nScyllaDB is built for that kind of workload. It delivers higher throughput per node, which typically means fewer nodes and lower infrastructure cost at the same latency targets. With DataStax now part of IBM, it may be a good moment to review options.\\n\\nWould you be open to a short comparison of what your fraud scoring workload could look like on ScyllaDB?\\n\\nOz\\nGTM Engineer, ScyllaDB\\n\\nReply STOP to opt out.\",\"evidence_ids\":[\"s01\"],\"value_prop_ids\":[\"vp_tco\"],\"context_fact_ids\":[\"cf_ibm\"]}",
-  "tokens_in": 3251,
-  "tokens_out": 722,
-  "model": "claude-opus-5-5",
-  "prompt_version": "personalize.v8"
-}

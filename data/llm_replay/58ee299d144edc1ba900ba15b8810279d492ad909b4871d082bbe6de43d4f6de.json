@@ -1,0 +1,7 @@
+{
+  "text": "{\"subject\":null,\"body\":\"Hi Tom, I saw the Northwind Payments team is focusing on capacity planning and cost and latency improvements for its multi-region data layer. I'm a GTM Engineer at ScyllaDB and would like to connect with SREs working on that kind of problem.\",\"evidence_ids\":[\"s02\"],\"value_prop_ids\":[\"vp_latency\"],\"context_fact_ids\":[]}",
+  "tokens_in": 582,
+  "tokens_out": 530,
+  "model": "claude-opus-5-5",
+  "prompt_version": "personalize.v9"
+}

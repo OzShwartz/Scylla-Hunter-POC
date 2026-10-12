@@ -115,6 +115,7 @@
 <p>
   Runs: {{ data.run_meta.runs }}<br>
   LLM calls: {{ data.run_meta.llm_calls }} ({{ data.run_meta.tokens_in }} in / {{ data.run_meta.tokens_out }} out tokens)<br>
+  Prompt cache: {{ data.run_meta.cache_read_input_tokens }} tokens read from cache, {{ data.run_meta.cache_creation_input_tokens }} tokens written to cache (live mode only - 0/0 in replay mode)<br>
   Models: {{ data.run_meta.models | join(", ") or "none" }}<br>
   Prompt versions: {{ data.run_meta.prompt_versions | join(", ") or "none" }}
 </p>

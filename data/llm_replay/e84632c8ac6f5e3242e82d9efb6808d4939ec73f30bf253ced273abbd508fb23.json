@@ -1,0 +1,7 @@
+{
+  "text": "{\"subject\":null,\"body\":\"Hi Maya, I came across how Northwind Payments runs fraud scoring with low-latency reads across three regions. I'm Oz, GTM Engineer at ScyllaDB, and I'd like to connect with leaders working on multi-region data layers.\",\"evidence_ids\":[\"s01\"],\"value_prop_ids\":[\"vp_tco\"],\"context_fact_ids\":[]}",
+  "tokens_in": 606,
+  "tokens_out": 549,
+  "model": "claude-opus-5-5",
+  "prompt_version": "personalize.v9"
+}

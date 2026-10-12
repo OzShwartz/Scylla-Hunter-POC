@@ -139,6 +139,7 @@
 ## Run metadata
 
 - Runs: 2
-- LLM calls: 20 (51146 in / 6701 out tokens)
+- LLM calls: 20 (25666 in / 6887 out tokens)
+- Prompt cache: 0 tokens read from cache, 0 tokens written to cache (live mode only - 0/0 in replay mode)
 - Models: claude-haiku-5-5, claude-opus-5-5
-- Prompt versions: extract_signals.v4, personalize.v8
+- Prompt versions: extract_signals.v4, personalize.v9

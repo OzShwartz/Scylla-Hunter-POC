@@ -23,6 +23,8 @@ class TriggerStats:
     llm_calls: int = 0
     tokens_in: int = 0
     tokens_out: int = 0
+    cache_creation_input_tokens: int = 0
+    cache_read_input_tokens: int = 0
     warm_drafted: list[str] = field(default_factory=list)  # lead ids
     cold_drafted: list[str] = field(default_factory=list)
     forced_review: list[int] = field(default_factory=list)  # message ids
@@ -51,6 +53,8 @@ def _draft_follow_up(
     stats.llm_calls += personalize_stats.llm_calls
     stats.tokens_in += personalize_stats.tokens_in
     stats.tokens_out += personalize_stats.tokens_out
+    stats.cache_creation_input_tokens += personalize_stats.cache_creation_input_tokens
+    stats.cache_read_input_tokens += personalize_stats.cache_read_input_tokens
     stats.forced_review.extend(personalize_stats.forced_review)
     return message_id
 
@@ -157,6 +161,8 @@ def simulate(
     stats.llm_calls += tick_stats.llm_calls
     stats.tokens_in += tick_stats.tokens_in
     stats.tokens_out += tick_stats.tokens_out
+    stats.cache_creation_input_tokens += tick_stats.cache_creation_input_tokens
+    stats.cache_read_input_tokens += tick_stats.cache_read_input_tokens
     stats.cold_drafted.extend(tick_stats.cold_drafted)
     stats.forced_review.extend(tick_stats.forced_review)
 

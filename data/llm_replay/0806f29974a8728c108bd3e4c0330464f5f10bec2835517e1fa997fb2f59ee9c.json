@@ -1,7 +1,0 @@
-{
-  "text": "{\"subject\":null,\"body\":\"Hi Tom, I noticed the Northwind Payments team is focused on capacity planning and on cost and latency improvements for its multi-region data layer alongside Kafka. I'm Oz, GTM Engineer at ScyllaDB. I'd be glad to connect.\",\"evidence_ids\":[\"s02\"],\"value_prop_ids\":[\"vp_latency\"],\"context_fact_ids\":[]}",
-  "tokens_in": 3140,
-  "tokens_out": 427,
-  "model": "claude-opus-5-5",
-  "prompt_version": "personalize.v8"
-}

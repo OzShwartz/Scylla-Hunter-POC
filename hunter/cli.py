@@ -131,6 +131,8 @@ def run(
         llm_calls=stats.llm_calls + personalize_stats.llm_calls,
         tokens_in=stats.tokens_in + personalize_stats.tokens_in,
         tokens_out=stats.tokens_out + personalize_stats.tokens_out,
+        cache_creation_input_tokens=stats.cache_creation_input_tokens + personalize_stats.cache_creation_input_tokens,
+        cache_read_input_tokens=stats.cache_read_input_tokens + personalize_stats.cache_read_input_tokens,
     )
 
     accounts = db.list_accounts(conn)
@@ -309,7 +311,11 @@ def event(
     typer.echo(f"Lead {lead} -> ACCEPTED. Warm email drafted as msg#{message_id}.")
     if stats.forced_review:
         typer.echo(f"Forced to review (validator failure after retry): {stats.forced_review}")
-    db.update_run_counts(conn, run_id, llm_calls=stats.llm_calls, tokens_in=stats.tokens_in, tokens_out=stats.tokens_out)
+    db.update_run_counts(
+        conn, run_id, llm_calls=stats.llm_calls, tokens_in=stats.tokens_in, tokens_out=stats.tokens_out,
+        cache_creation_input_tokens=stats.cache_creation_input_tokens,
+        cache_read_input_tokens=stats.cache_read_input_tokens,
+    )
     dispatch.dispatch_approved(conn, config, run_id=run_id, now=datetime.now())
     conn.close()
 
@@ -345,7 +351,11 @@ def simulate(
     if stats.forced_review:
         typer.echo(f"Forced to review (validator failure after retry): {stats.forced_review}")
 
-    db.update_run_counts(conn, run_id, llm_calls=stats.llm_calls, tokens_in=stats.tokens_in, tokens_out=stats.tokens_out)
+    db.update_run_counts(
+        conn, run_id, llm_calls=stats.llm_calls, tokens_in=stats.tokens_in, tokens_out=stats.tokens_out,
+        cache_creation_input_tokens=stats.cache_creation_input_tokens,
+        cache_read_input_tokens=stats.cache_read_input_tokens,
+    )
     dispatch_stats = dispatch.dispatch_approved(conn, config, run_id=run_id, now=datetime.now())
     if dispatch_stats.sent_message_ids:
         typer.echo(f"\n{len(dispatch_stats.sent_message_ids)} message(s) dispatched (dry-run) - see outbox.jsonl")

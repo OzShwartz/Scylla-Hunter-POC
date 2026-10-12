@@ -53,7 +53,11 @@ def post_event(request: EventRequest) -> dict:
         except ReplayMissError as e:
             raise HTTPException(status_code=409, detail=str(e)) from e
 
-        db.update_run_counts(conn, run_id, llm_calls=stats.llm_calls, tokens_in=stats.tokens_in, tokens_out=stats.tokens_out)
+        db.update_run_counts(
+            conn, run_id, llm_calls=stats.llm_calls, tokens_in=stats.tokens_in, tokens_out=stats.tokens_out,
+            cache_creation_input_tokens=stats.cache_creation_input_tokens,
+            cache_read_input_tokens=stats.cache_read_input_tokens,
+        )
         dispatch_stats = dispatch.dispatch_approved(conn, config, run_id=run_id, now=now)
 
         lead = db.get_lead(conn, request.lead_id)
@@ -79,7 +83,11 @@ def post_tick(request: TickRequest) -> dict:
         except ReplayMissError as e:
             raise HTTPException(status_code=409, detail=str(e)) from e
 
-        db.update_run_counts(conn, run_id, llm_calls=stats.llm_calls, tokens_in=stats.tokens_in, tokens_out=stats.tokens_out)
+        db.update_run_counts(
+            conn, run_id, llm_calls=stats.llm_calls, tokens_in=stats.tokens_in, tokens_out=stats.tokens_out,
+            cache_creation_input_tokens=stats.cache_creation_input_tokens,
+            cache_read_input_tokens=stats.cache_read_input_tokens,
+        )
         dispatch_stats = dispatch.dispatch_approved(conn, config, run_id=run_id, now=now)
 
         return {

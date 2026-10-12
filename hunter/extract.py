@@ -18,6 +18,8 @@ class ExtractionStats:
     llm_calls: int = 0
     tokens_in: int = 0
     tokens_out: int = 0
+    cache_creation_input_tokens: int = 0
+    cache_read_input_tokens: int = 0
     flagged: list[str] = field(default_factory=list)  # signal ids whose grounding check failed
 
 
@@ -79,6 +81,8 @@ def extract_signals(
         stats.llm_calls += 1
         stats.tokens_in += result.tokens_in
         stats.tokens_out += result.tokens_out
+        stats.cache_creation_input_tokens += result.cache_creation_input_tokens
+        stats.cache_read_input_tokens += result.cache_read_input_tokens
 
         extraction = ExtractionResult.model_validate(json.loads(result.text))
         grounded = _apply_grounding(extraction, raw.text)

@@ -1,0 +1,7 @@
+{
+  "text": "{\"subject\":\"Throughput per node for Cassandra-style workloads\",\"body\":\"Hi Dana,\\n\\nCongrats on the move to Brightwave AI. Your background at Northwind Payments, where fraud scoring runs on Astra DB, puts you close to the kind of Cassandra-style workload ScyllaDB is built for.\\n\\nAs you shape infrastructure at Brightwave AI, here is one point that may be useful. ScyllaDB delivers higher throughput per node, which typically means fewer nodes and lower infrastructure cost.\\n\\nIf it would help, I can send a short overview of how teams evaluate that tradeoff. Open to it?\\n\\nOz\\nGTM Engineer, ScyllaDB\\n\\nReply STOP to opt out.\",\"evidence_ids\":[\"champ_p12_a01\"],\"value_prop_ids\":[\"vp_tco\"],\"context_fact_ids\":[]}",
+  "tokens_in": 492,
+  "tokens_out": 886,
+  "model": "claude-opus-5-5",
+  "prompt_version": "personalize.v9"
+}

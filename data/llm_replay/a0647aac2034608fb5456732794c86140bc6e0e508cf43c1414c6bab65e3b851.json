@@ -1,0 +1,7 @@
+{
+  "text": "{\"subject\":\"Scaling 2B shipment-tracking events/day\",\"body\":\"Hi Joris,\\n\\nLumen Logistics' shipment-tracking service writes 2B events/day to DataStax Enterprise 6.8, and your team is focused on modernising that cluster and reducing operational toil. With IBM having completed its DataStax acquisition, it may also be a natural moment to review options.\\n\\nScyllaDB delivers higher throughput per node, which typically means fewer nodes and lower infrastructure cost for a write-heavy workload like yours.\\n\\nWould it be worth comparing notes on what that could look like for your cluster?\\n\\nOz\\nGTM Engineer, ScyllaDB\\n\\nReply STOP to opt out.\",\"evidence_ids\":[\"s03\"],\"value_prop_ids\":[\"vp_tco\"],\"context_fact_ids\":[\"cf_ibm\"]}",
+  "tokens_in": 596,
+  "tokens_out": 715,
+  "model": "claude-opus-5-5",
+  "prompt_version": "personalize.v9"
+}

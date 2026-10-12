@@ -55,17 +55,11 @@ Real output from `examples/run_log.txt` - nothing in this section is invented.
 
 1. **Evidence.** `s01`, a customer-reference page, high confidence: *"Northwind Payments runs fraud scoring on Astra DB."*
 2. **Score breakdown.** `evidence=55.7, icp=25, why_now=15` → **account score 96** (≥ 80 auto-approve threshold).
-3. **Invite** (auto-approved, sent): *"Hi Maya, I came across Northwind Payments' fraud scoring work, serving single-digit millisecond reads across three regions at 40k transactions per second. I'm a GTM Engineer at ScyllaDB and talk with teams running multi-region, high-throughput workloads. Would be glad to connect."*
+3. **Invite** (auto-approved, sent): *"Hi Maya, I came across how Northwind Payments runs fraud scoring with low-latency reads across three regions. I'm Oz, GTM Engineer at ScyllaDB, and I'd like to connect with leaders working on multi-region data layers."*
 4. **Accepted event** (`hunter simulate --days 7`, scripted day 2): lead status `INVITED` → `ACCEPTED`.
 5. **Warm email drafted** - the full text, unedited:
 
-   > Hi Maya,
-   >
-   > Thanks for connecting. I read that Northwind Payments runs fraud scoring on Astra DB, needing single-digit millisecond reads across three regions at 40k transactions per second.
-   >
-   > ScyllaDB is built for that kind of workload. It delivers higher throughput per node, which typically means fewer nodes and lower infrastructure cost at the same latency targets. With DataStax now part of IBM, it may be a good moment to review options.
-   >
-   > Would you be open to a short comparison of what your fraud scoring workload could look like on ScyllaDB?
+   > Thanks for connecting, Maya. I came across a customer reference describing how Northwind Payments runs fraud scoring on Astra DB, with single-digit millisecond reads across three regions at 40k transactions per second. With IBM's DataStax acquisition now complete, this may be a natural moment to review options. ScyllaDB offers higher throughput per node, which typically means fewer nodes and lower infrastructure cost for workloads like that. Would you be open to comparing notes on how your fraud scoring cluster is sized?
    >
    > Oz
    > GTM Engineer, ScyllaDB
@@ -104,6 +98,10 @@ Real output from `examples/run_log.txt` - nothing in this section is invented.
 - **LinkedIn automation or scraping.** Out of scope on legal grounds, not a time constraint.
 - **Live Apollo/people-API calls.** The exact request is generated and logged (`people_query` in the account record); nothing is actually sent.
 - **CRM sync, a UI beyond the report, reply classification, A/B testing.** All production-roadmap items (§20) that need real outcome data this PoC has no way to generate.
+
+## Known limitations at scale
+
+- `extract.detect_champion_moves` runs one query per (person, previous company) pair - fine at fixture size (13 people), would want batching into a single query if the real dataset grew by orders of magnitude.
 
 ## Path to production
 
@@ -145,6 +143,10 @@ A `probable_user` account gets no firmographics (`employees: null`) → status `
 ## Integration-ready trigger endpoints (FR-12, optional)
 
 `python -m hunter serve` exposes `POST /events` and `POST /tick` - the exact same trigger logic the CLI's `event`/`simulate` commands call, just reachable over HTTP (`tests/test_server.py` proves the HTTP and CLI paths land in the same DB state). Any orchestrator that can make an HTTP call - n8n, Make, Salesforce Flow, a cron job - can drive the pipeline through these with no code changes. n8n is the production recommendation (PRD §14.5); actually wiring and running an n8n workflow against it is left as an exercise, not shipped here - I'd rather ship two tested endpoints than an unverified workflow export. Optional - the CLI demo above is the primary path.
+
+## Security & quality checks
+
+`gitleaks` over the full git history: clean. `pip-audit` on `requirements.txt`: no known vulnerabilities. `bandit` on `hunter/`: all findings fixed (HTML report now autoescaped) or justified (two false positives, documented inline). SQL is 100% parameterized; `hunter serve` binds to `127.0.0.1` by default. Both prompts treat external source text as data, not instructions, with an explicit injection-resistance rule.
 
 ## How this was built
 

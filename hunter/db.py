@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS runs (
     llm_calls INTEGER NOT NULL DEFAULT 0,
     tokens_in INTEGER NOT NULL DEFAULT 0,
     tokens_out INTEGER NOT NULL DEFAULT 0,
+    cache_creation_input_tokens INTEGER NOT NULL DEFAULT 0,
+    cache_read_input_tokens INTEGER NOT NULL DEFAULT 0,
     started_at TEXT NOT NULL
 );
 
@@ -160,6 +162,8 @@ def update_run_counts(
     llm_calls: int = 0,
     tokens_in: int = 0,
     tokens_out: int = 0,
+    cache_creation_input_tokens: int = 0,
+    cache_read_input_tokens: int = 0,
 ) -> None:
     conn.execute(
         """
@@ -168,7 +172,9 @@ def update_run_counts(
             prompt_versions = COALESCE(?, prompt_versions),
             llm_calls = llm_calls + ?,
             tokens_in = tokens_in + ?,
-            tokens_out = tokens_out + ?
+            tokens_out = tokens_out + ?,
+            cache_creation_input_tokens = cache_creation_input_tokens + ?,
+            cache_read_input_tokens = cache_read_input_tokens + ?
         WHERE id = ?
         """,
         (
@@ -177,6 +183,8 @@ def update_run_counts(
             llm_calls,
             tokens_in,
             tokens_out,
+            cache_creation_input_tokens,
+            cache_read_input_tokens,
             run_id,
         ),
     )

@@ -23,6 +23,8 @@ class PersonalizationStats:
     llm_calls: int = 0
     tokens_in: int = 0
     tokens_out: int = 0
+    cache_creation_input_tokens: int = 0
+    cache_read_input_tokens: int = 0
     forced_review: list[int] = field(default_factory=list)  # message ids forced to review
 
 
@@ -160,6 +162,8 @@ def draft_message(
         stats.llm_calls += 1
         stats.tokens_in += result.tokens_in
         stats.tokens_out += result.tokens_out
+        stats.cache_creation_input_tokens += result.cache_creation_input_tokens
+        stats.cache_read_input_tokens += result.cache_read_input_tokens
         message_tokens += result.tokens_in + result.tokens_out
         try:
             return DraftResult.model_validate(json.loads(result.text)), result.model, []

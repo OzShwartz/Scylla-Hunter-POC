@@ -155,6 +155,8 @@ def run_metadata(conn: sqlite3.Connection) -> dict:
         "llm_calls": sum(r["llm_calls"] for r in runs),
         "tokens_in": sum(r["tokens_in"] for r in runs),
         "tokens_out": sum(r["tokens_out"] for r in runs),
+        "cache_creation_input_tokens": sum(r["cache_creation_input_tokens"] for r in runs),
+        "cache_read_input_tokens": sum(r["cache_read_input_tokens"] for r in runs),
         "models": sorted(models),
         "prompt_versions": sorted(prompt_versions),
     }
@@ -256,6 +258,10 @@ def render_markdown(data: ReportData) -> str:
     lines += ["## Run metadata", ""]
     lines.append(f"- Runs: {data.run_meta['runs']}")
     lines.append(f"- LLM calls: {data.run_meta['llm_calls']} ({data.run_meta['tokens_in']} in / {data.run_meta['tokens_out']} out tokens)")
+    lines.append(
+        f"- Prompt cache: {data.run_meta['cache_read_input_tokens']} tokens read from cache, "
+        f"{data.run_meta['cache_creation_input_tokens']} tokens written to cache (live mode only - 0/0 in replay mode)"
+    )
     lines.append(f"- Models: {', '.join(data.run_meta['models']) or 'none'}")
     lines.append(f"- Prompt versions: {', '.join(data.run_meta['prompt_versions']) or 'none'}")
     lines.append("")

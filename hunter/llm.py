@@ -59,6 +59,8 @@ class LLMResult:
     tokens_out: int
     model: str
     from_replay: bool
+    cache_creation_input_tokens: int = 0
+    cache_read_input_tokens: int = 0
 
 
 def _hash_key(prompt_version: str, model: str, rendered_input: str) -> str:
@@ -105,6 +107,10 @@ def call_llm(
             tokens_out=cached["tokens_out"],
             model=cached["model"],
             from_replay=True,
+            # .get() with a default: replay files recorded before prompt caching was
+            # added don't have these keys.
+            cache_creation_input_tokens=cached.get("cache_creation_input_tokens", 0),
+            cache_read_input_tokens=cached.get("cache_read_input_tokens", 0),
         )
 
     if mode == "replay":
@@ -157,6 +163,8 @@ def call_llm(
             tokens_out=response.usage.output_tokens,
             model=model,
             from_replay=False,
+            cache_creation_input_tokens=getattr(response.usage, "cache_creation_input_tokens", 0) or 0,
+            cache_read_input_tokens=getattr(response.usage, "cache_read_input_tokens", 0) or 0,
         )
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(
@@ -167,6 +175,8 @@ def call_llm(
                     "tokens_out": result.tokens_out,
                     "model": result.model,
                     "prompt_version": prompt_version,
+                    "cache_creation_input_tokens": result.cache_creation_input_tokens,
+                    "cache_read_input_tokens": result.cache_read_input_tokens,
                 },
                 indent=2,
             )
