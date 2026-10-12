@@ -36,11 +36,11 @@
 - Auto-approved: 3 · Human-approved: 7
 - Edited: 1 · Rejected: 0
 
-| Route code | Count |
-|---|---|
-| score_band | 4 |
-| score_ok | 3 |
-| sensitive_content | 3 |
+| Route code | What it means | Count |
+|---|---|---|
+| `score_band` (Human review: mid score) | Score 60-79 | 4 |
+| `score_ok` (Auto-sent) | Score 80+, all checks passed, nothing sensitive | 3 |
+| `sensitive_content` (Human review: forced) | Mentions a competitor product, the IBM/DataStax acquisition, or a renewal/contract | 3 |
 
 ## Accounts
 
@@ -56,23 +56,30 @@
 | Brightwave AI | 61 | QUALIFIED | Account score 61 >= threshold 60 (evidence=30.9, icp=15, why_now=15) |
 | Sprocket Labs | 0 | REJECTED | Gate: 12 employees, below ICP min_employees=100 |
 
+## How the account score works
+
+- Evidence: top-2 signals, recency decay, confidence - max 60
+- ICP: company size band + industry bonus - max 25
+- Why now: 15 when a recent signal shows intent
+- Total max 100 · qualify at 60+ · auto-approve at 80+ (see PRD §9)
+
 ## Leads
 
-| Lead | Company | Persona | Status | Reason |
-|---|---|---|---|---|
-| Maya Rosen | Northwind Payments | decision_maker | EMAILED | warm email dispatched (dry-run) |
-| Tom Hale | Northwind Payments | practitioner | EMAILED | cold email dispatched (dry-run) |
-| Ana Costa | Northwind Payments | practitioner | DEPRIORITIZED | Qualified but rank 3 exceeds the remaining cap (2/2 slots open - 0 already contacted) |
-| Ruth Green | Northwind Payments | - | REJECTED | Gate: excluded department (HR) |
-| Joris de Vries | Lumen Logistics | decision_maker | EMAILED | cold email dispatched (dry-run) |
-| Rita Okafor | Lumen Logistics | - | SUPPRESSED | Email is on the opt-out list |
-| Jason Park | Orbit Media | - | REJECTED | Account not qualified: Account score 23 below threshold 60 |
-| Lior Ben-David | Kestrel Games | practitioner | EMAILED | warm email dispatched (dry-run) |
-| Cassandra Lee | Pinecrest Analytics | - | REJECTED | Account not qualified: Gate: no technology evidence |
-| Felix Braun | Quanta Retail | - | SUPPRESSED | Account suppressed: Existing ScyllaDB customer domain |
-| Priya Nair | DataStax | - | SUPPRESSED | Account suppressed: Competitor domain |
-| Dana Weiss | Brightwave AI | decision_maker | EMAILED | cold email dispatched (dry-run) |
-| Nuno Alves | Sprocket Labs | - | REJECTED | Account not qualified: Gate: 12 employees, below ICP min_employees=100 |
+| Lead | Title | LinkedIn | Company | Persona | Status | Reason |
+|---|---|---|---|---|---|---|
+| Maya Rosen | VP Engineering | https://linkedin.example/in/maya-rosen | Northwind Payments | decision_maker | EMAILED | warm email dispatched (dry-run) |
+| Tom Hale | Staff SRE | https://linkedin.example/in/tom-hale | Northwind Payments | practitioner | EMAILED | cold email dispatched (dry-run) |
+| Ana Costa | Senior Data Engineer | https://linkedin.example/in/ana-costa | Northwind Payments | practitioner | DEPRIORITIZED | Qualified but rank 3 exceeds the remaining cap (2/2 slots open - 0 already contacted) |
+| Ruth Green | HR Director | https://linkedin.example/in/ruth-green | Northwind Payments | - | REJECTED | Gate: excluded department (HR) |
+| Joris de Vries | Head of Platform | https://linkedin.example/in/joris-devries | Lumen Logistics | decision_maker | EMAILED | cold email dispatched (dry-run) |
+| Rita Okafor | SRE | https://linkedin.example/in/rita-okafor | Lumen Logistics | - | SUPPRESSED | Email is on the opt-out list |
+| Jason Park | Director of Engineering | https://linkedin.example/in/jason-park | Orbit Media | - | REJECTED | Account not qualified: Account score 23 below threshold 60 |
+| Lior Ben-David | Principal Engineer | https://linkedin.example/in/lior-ben-david | Kestrel Games | practitioner | EMAILED | warm email dispatched (dry-run) |
+| Cassandra Lee | Head of Data | https://linkedin.example/in/cassandra-lee | Pinecrest Analytics | - | REJECTED | Account not qualified: Gate: no technology evidence |
+| Felix Braun | VP Engineering | https://linkedin.example/in/felix-braun | Quanta Retail | - | SUPPRESSED | Account suppressed: Existing ScyllaDB customer domain |
+| Priya Nair | Solutions Architect | https://linkedin.example/in/priya-nair | DataStax | - | SUPPRESSED | Account suppressed: Competitor domain |
+| Dana Weiss | Head of Infrastructure | https://linkedin.example/in/dana-weiss | Brightwave AI | decision_maker | EMAILED | cold email dispatched (dry-run) |
+| Nuno Alves | CTO | https://linkedin.example/in/nuno-alves | Sprocket Labs | - | REJECTED | Account not qualified: Gate: 12 employees, below ICP min_employees=100 |
 
 ## Sent messages
 
@@ -135,6 +142,16 @@
 | Evidence | Type | Source | Date |
 |---|---|---|---|
 | champ_p12_a01 | champion_move | https://competitor.example/customers/northwind-payments | 2026-07-01 |
+
+## Sequence timeline
+
+| Lead | Invite sent | Accepted | Next action | Due | Days remaining | Status |
+|---|---|---|---|---|---|---|
+| Maya Rosen | 2026-10-08 | 2026-10-10 | Done (warm email) | 2026-10-10 | 0 | Sent on 2026-10-10 |
+| Tom Hale | 2026-10-08 | - | Done (cold email) | 2026-10-15 | 0 | Sent on 2026-10-15 |
+| Joris de Vries | 2026-10-08 | - | Done (cold email) | 2026-10-15 | 0 | Sent on 2026-10-15 |
+| Lior Ben-David | 2026-10-08 | 2026-10-12 | Done (warm email) | 2026-10-12 | 0 | Sent on 2026-10-12 |
+| Dana Weiss | 2026-10-08 | - | Done (cold email) | 2026-10-15 | 0 | Sent on 2026-10-15 |
 
 ## Run metadata
 

@@ -62,9 +62,24 @@
   .pill-bad{background:var(--bad-bg); color:var(--bad);}
   .pill-off{background:var(--off-bg); color:var(--off);}
 
-  /* ---- Lead cards ---- */
-  .lead-card{margin-bottom:1.1rem;}
-  .lead-card .lead-top{display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:0.5rem; margin-bottom:0.9rem;}
+  /* ---- Score legend box ---- */
+  .legend-box{display:grid; grid-template-columns:repeat(auto-fit, minmax(190px,1fr)); gap:1rem; margin-bottom:0.6rem;}
+  .legend-item{display:flex; gap:0.6rem; align-items:flex-start;}
+  .legend-swatch{width:0.7rem; height:0.7rem; border-radius:3px; margin-top:0.3rem; flex:none;}
+  .legend-item .t{font-weight:600; font-size:0.85rem;}
+  .legend-item .d{font-size:0.78rem; color:var(--muted);}
+  .legend-totals{font-size:0.8rem; color:var(--muted); border-top:1px solid var(--line); padding-top:0.7rem; margin-top:0.3rem;}
+  .legend-totals a{color:var(--blue);}
+
+  /* ---- Lead cards (collapsible, native <details>) ---- */
+  .expand-hint{font-size:0.78rem; color:var(--muted); margin:0 0 0.8rem;}
+  .lead-card{margin-bottom:1.1rem; padding:0;}
+  .lead-card > summary{cursor:pointer; list-style:none; padding:1.4rem 1.6rem;}
+  .lead-card > summary::-webkit-details-marker{display:none;}
+  .lead-card > summary::before{content:"▸"; display:inline-block; color:var(--muted); margin-right:0.5rem; transition:transform 0.1s;}
+  .lead-card[open] > summary::before{transform:rotate(90deg);}
+  .lead-card > .lead-card-body{padding:0 1.6rem 1.4rem;}
+  .lead-card .lead-top{display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:0.5rem;}
   .lead-card .lead-name{font-family:var(--heading-font); font-size:1.08rem; font-weight:600; color:var(--navy);}
   .lead-card .lead-sub{color:var(--muted); font-size:0.85rem;}
   .score-bar{display:flex; height:0.6rem; border-radius:5px; overflow:hidden; margin:0.5rem 0 0.3rem; background:var(--bg-soft);}
@@ -96,6 +111,9 @@
     header.brand{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
     .card-shell{box-shadow:none; border:1px solid #ccc;}
     section{page-break-inside:avoid;}
+    details{display:block;}
+    details > *{display:block;}
+    .lead-card > summary::before{content:"";}
   }
 </style>
 </head>
@@ -182,63 +200,119 @@
     <div class="stat"><div class="n">{{ data.hitl_summary.rejections }}</div><div class="l">Rejected</div></div>
   </div>
   <table style="margin-top:1rem;">
-    <tr><th>Route code</th><th>Count</th></tr>
+    <tr><th>Route code</th><th>What it means</th><th>Count</th></tr>
     {% for code, count in data.hitl_summary.by_code.items() | sort %}
-    <tr><td><code>{{ code }}</code></td><td>{{ count }}</td></tr>
+    {% set info = data.route_code_info.get(code, {"label": code, "description": ""}) %}
+    <tr>
+      <td><strong>{{ info.label }}</strong><br><code style="font-size:0.72rem;">{{ code }}</code></td>
+      <td class="muted">{{ info.description }}</td>
+      <td>{{ count }}</td>
+    </tr>
     {% endfor %}
   </table>
 </section>
 
+<section class="card-shell">
+  <h2>How the account score works</h2>
+  {% set legend = data.score_legend %}
+  <div class="legend-box">
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:var(--teal)"></div>
+      <div><div class="t">Evidence &middot; max {{ "%.0f"|format(legend.evidence_max) }}</div><div class="d">Top 2 signals, recency decay, confidence</div></div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:var(--blue)"></div>
+      <div><div class="t">ICP &middot; max {{ legend.icp_max }}</div><div class="d">Company size band + industry bonus</div></div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:var(--purple)"></div>
+      <div><div class="t">Why now &middot; max {{ legend.why_now_max }}</div><div class="d">A recent signal shows intent</div></div>
+    </div>
+  </div>
+  <div class="legend-totals">
+    Total max <strong>{{ "%.0f"|format(legend.total_max) }}</strong> &middot;
+    qualify at <strong>{{ legend.qualify_threshold }}+</strong> &middot;
+    auto-approve at <strong>{{ legend.auto_threshold }}+</strong> &middot;
+    see <a href="PRD.md#9-scoring-model-formulas-weights-and-parameters">PRD §9</a>
+  </div>
+</section>
+
 <section>
-  <h2 style="border:none; margin-bottom:1rem;">Leads</h2>
+  <h2 style="border:none; margin-bottom:0.3rem;">Leads</h2>
+  <p class="expand-hint">Click a lead to expand it. Printing (&#8984;/Ctrl+P) expands every card automatically.</p>
   {% for c in data.lead_cards %}
   {% set lead = c.lead %}
   {% set account = c.account %}
-  <div class="card-shell lead-card">
-    <div class="lead-top">
-      <div>
-        <span class="lead-name">{{ lead.first_name }} {{ lead.last_name }}</span>
-        <span class="lead-sub">&middot; {{ lead.persona.replace("_"," ") if lead.persona else "-" }} &middot; {{ account.name }}</span>
+  <details class="card-shell lead-card">
+    <summary>
+      <div class="lead-top">
+        <div>
+          <span class="lead-name">{{ lead.first_name }} {{ lead.last_name }}</span>
+          <span class="lead-sub">&middot; {{ lead.title or "-" }} &middot; {{ account.name }}</span>
+        </div>
+        <div>{{ status_pill(lead.status) }} <strong style="margin-left:0.5rem;">{{ account.account_score }}</strong></div>
       </div>
-      <div>{{ status_pill(lead.status) }}</div>
-    </div>
-
-    {% set total = (account.evidence_points + account.icp_points + account.why_now_points) or 1 %}
-    <div class="score-bar">
-      <span class="score-seg-evidence" style="width:{{ (account.evidence_points/total*100)|round(1) }}%"></span>
-      <span class="score-seg-icp" style="width:{{ (account.icp_points/total*100)|round(1) }}%"></span>
-      <span class="score-seg-whynow" style="width:{{ (account.why_now_points/total*100)|round(1) }}%"></span>
-    </div>
-    <div class="score-legend">
-      <span><i style="background:var(--teal)"></i>Evidence {{ "%.1f"|format(account.evidence_points) }}</span>
-      <span><i style="background:var(--blue)"></i>ICP {{ account.icp_points }}</span>
-      <span><i style="background:var(--purple)"></i>Why now {{ account.why_now_points }}</span>
-      <span>&middot; Account score <strong>{{ account.account_score }}</strong> ({{ account.status }})</span>
-    </div>
-    <p class="muted" style="font-size:0.8rem; margin:0.5rem 0 0;">{{ account.reason }}</p>
-
-    {% for m in c.messages %}
-    <div class="message-block">
-      <div class="mhead">
-        <span class="chan">{{ m.channel }}/{{ m.variant }}</span>
-        {{ status_pill(m.status) }}
-        <span class="muted" style="font-size:0.78rem;">route: {{ m.approval_route }}</span>
+    </summary>
+    <div class="lead-card-body">
+      {% set total = (account.evidence_points + account.icp_points + account.why_now_points) or 1 %}
+      <div class="score-bar">
+        <span class="score-seg-evidence" style="width:{{ (account.evidence_points/total*100)|round(1) }}%"></span>
+        <span class="score-seg-icp" style="width:{{ (account.icp_points/total*100)|round(1) }}%"></span>
+        <span class="score-seg-whynow" style="width:{{ (account.why_now_points/total*100)|round(1) }}%"></span>
       </div>
-      <p class="reason">{{ m.route_reason }}</p>
-      {% if m.subject %}<div class="message-subject">{{ m.subject }}</div>{% endif %}
-      <div class="message-body">{{ m.body }}</div>
-      {% if m.evidence %}
-      <ul class="evidence-list">
-        {% for e in m.evidence %}
-        <li><code>{{ e.id }}</code> {{ e.type }} ({{ e.confidence }}, {{ e.published_at }}) &middot; <a href="{{ e.source_url }}">{{ e.source_url }}</a></li>
-        {% endfor %}
-      </ul>
-      {% endif %}
+      <div class="score-legend">
+        <span><i style="background:var(--teal)"></i>Evidence {{ "%.1f"|format(account.evidence_points) }}</span>
+        <span><i style="background:var(--blue)"></i>ICP {{ account.icp_points }}</span>
+        <span><i style="background:var(--purple)"></i>Why now {{ account.why_now_points }}</span>
+        <span>&middot; Account score <strong>{{ account.account_score }}</strong> ({{ account.status }})</span>
+      </div>
+      <p class="muted" style="font-size:0.8rem; margin:0.5rem 0 0;">{{ account.reason }}</p>
+      {% if lead.linkedin_url %}<p style="font-size:0.8rem; margin:0.3rem 0 0;"><a href="{{ lead.linkedin_url }}">{{ lead.linkedin_url }}</a></p>{% endif %}
+
+      {% for m in c.messages %}
+      <div class="message-block">
+        <div class="mhead">
+          <span class="chan">{{ m.channel }}/{{ m.variant }}</span>
+          {{ status_pill(m.status) }}
+          <span class="muted" style="font-size:0.78rem;">route: {{ m.approval_route }}</span>
+        </div>
+        <p class="reason">{{ m.route_reason }}</p>
+        {% if m.subject %}<div class="message-subject">{{ m.subject }}</div>{% endif %}
+        <div class="message-body">{{ m.body }}</div>
+        {% if m.evidence %}
+        <ul class="evidence-list">
+          {% for e in m.evidence %}
+          <li><code>{{ e.id }}</code> {{ e.type }} ({{ e.confidence }}, {{ e.published_at }}) &middot; <a href="{{ e.source_url }}">{{ e.source_url }}</a></li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      {% endfor %}
     </div>
-    {% endfor %}
-  </div>
+  </details>
   {% endfor %}
 </section>
+
+{% if data.sequence_timeline %}
+<section class="card-shell">
+  <h2>Sequence timeline</h2>
+  <table>
+    <tr><th>Lead</th><th>Invite sent</th><th>Accepted</th><th>Next action</th><th>Due</th><th>Days remaining</th><th>Status</th></tr>
+    {% for row in data.sequence_timeline %}
+    {% set lead = row.lead %}
+    <tr>
+      <td>{{ lead.first_name }} {{ lead.last_name }}</td>
+      <td>{{ row.invite_sent }}</td>
+      <td>{{ row.accepted if row.accepted else "-" }}</td>
+      <td>{{ row.next_action }}</td>
+      <td>{{ row.due_date }}</td>
+      <td>{{ row.days_remaining }}</td>
+      <td>{{ row.status_label }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endif %}
 
 {% if data.live_accounts %}
 <section class="card-shell">
@@ -265,11 +339,13 @@
 <section class="card-shell">
   <h2>All leads</h2>
   <table>
-    <tr><th>Lead</th><th>Company</th><th>Persona</th><th>Status</th><th>Reason</th></tr>
+    <tr><th>Lead</th><th>Title</th><th>LinkedIn</th><th>Company</th><th>Persona</th><th>Status</th><th>Reason</th></tr>
     {% for lead in data.leads %}
     {% set account = accounts_by_id.get(lead.account_id) %}
     <tr>
       <td>{{ lead.first_name }} {{ lead.last_name }}</td>
+      <td>{{ lead.title or "-" }}</td>
+      <td>{% if lead.linkedin_url %}<a href="{{ lead.linkedin_url }}">profile</a>{% else %}-{% endif %}</td>
       <td>{{ account.name if account else lead.account_id }}</td>
       <td>{{ lead.persona or "-" }}</td>
       <td>{{ status_pill(lead.status) }}</td>

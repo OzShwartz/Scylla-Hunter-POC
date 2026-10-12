@@ -70,7 +70,22 @@ Real output from `examples/run_log.txt` - nothing in this section is invented.
 
 ## How quality is measured
 
-`hunter eval` scores every run against fixture `_expected` values - never read by the pipeline itself, only by the evaluator: **32/32** extraction fields, **13/13** lead selections, **10/10** grounded messages. **157 automated tests** cover scoring, gates, validators, HITL routing, triggers, dispatch, the report, and the GitHub source. Grounding is enforced in code, not just prompted: every `evidence_quote` must be a verbatim substring of the source text, every cited evidence id must exist and belong to the lead's account, and every named person must actually appear in the source.
+`hunter eval` scores every run against fixture `_expected` values - never read by the pipeline itself, only by the evaluator: **32/32** extraction fields, **13/13** lead selections, **10/10** grounded messages. **159 automated tests** cover scoring, gates, validators, HITL routing, triggers, dispatch, the report, and the GitHub source. Grounding is enforced in code, not just prompted: every `evidence_quote` must be a verbatim substring of the source text, every cited evidence id must exist and belong to the lead's account, and every named person must actually appear in the source.
+
+## Assumptions
+
+Full detail and the questions these would resolve with a real hiring manager: **[PRD §21](PRD.md#21-assumptions-and-open-questions)**.
+
+| Assumption | Confidence | If wrong |
+|---|---|---|
+| Both personas (decision maker, practitioner) are in scope; decision maker ranks first | Medium | Reorder `personas.*.priority` in `config.yaml` - one line |
+| Account-first discovery ending in a LinkedIn profile URL answers "identify relevant users on LinkedIn" | Medium | A different discovery shape (person-first search) would need new logic, not just config |
+| Fictional data (`.example` domains) plus one real source (GitHub) is acceptable for the demo | High | Swap `data/fixtures.json` for real company data - a data change, not a code change |
+| Production stack is n8n + Salesforce, outbound email tool unknown | Low | Pure inference from the job description, never confirmed - would change §14.5's narrative, not the PoC code |
+| Scoring weights and thresholds (`config.yaml`) are starting points, calibrated later against real accept/reply rates | High | Standard practice for any new lead-scoring model - no outcome data exists yet to calibrate against anyway |
+| Value props are directionally right but need product-marketing confirmation before real use | High (on the process, not the copy) | Edit the `verify: true` entries in `config.yaml` once confirmed |
+
+These are the commercial assumptions I'd confirm with the hiring team; each maps to a config value, so changing one is a config edit, not a code change.
 
 ## Key decisions
 

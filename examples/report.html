@@ -62,9 +62,24 @@
   .pill-bad{background:var(--bad-bg); color:var(--bad);}
   .pill-off{background:var(--off-bg); color:var(--off);}
 
-  /* ---- Lead cards ---- */
-  .lead-card{margin-bottom:1.1rem;}
-  .lead-card .lead-top{display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:0.5rem; margin-bottom:0.9rem;}
+  /* ---- Score legend box ---- */
+  .legend-box{display:grid; grid-template-columns:repeat(auto-fit, minmax(190px,1fr)); gap:1rem; margin-bottom:0.6rem;}
+  .legend-item{display:flex; gap:0.6rem; align-items:flex-start;}
+  .legend-swatch{width:0.7rem; height:0.7rem; border-radius:3px; margin-top:0.3rem; flex:none;}
+  .legend-item .t{font-weight:600; font-size:0.85rem;}
+  .legend-item .d{font-size:0.78rem; color:var(--muted);}
+  .legend-totals{font-size:0.8rem; color:var(--muted); border-top:1px solid var(--line); padding-top:0.7rem; margin-top:0.3rem;}
+  .legend-totals a{color:var(--blue);}
+
+  /* ---- Lead cards (collapsible, native <details>) ---- */
+  .expand-hint{font-size:0.78rem; color:var(--muted); margin:0 0 0.8rem;}
+  .lead-card{margin-bottom:1.1rem; padding:0;}
+  .lead-card > summary{cursor:pointer; list-style:none; padding:1.4rem 1.6rem;}
+  .lead-card > summary::-webkit-details-marker{display:none;}
+  .lead-card > summary::before{content:"▸"; display:inline-block; color:var(--muted); margin-right:0.5rem; transition:transform 0.1s;}
+  .lead-card[open] > summary::before{transform:rotate(90deg);}
+  .lead-card > .lead-card-body{padding:0 1.6rem 1.4rem;}
+  .lead-card .lead-top{display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:0.5rem;}
   .lead-card .lead-name{font-family:var(--heading-font); font-size:1.08rem; font-weight:600; color:var(--navy);}
   .lead-card .lead-sub{color:var(--muted); font-size:0.85rem;}
   .score-bar{display:flex; height:0.6rem; border-radius:5px; overflow:hidden; margin:0.5rem 0 0.3rem; background:var(--bg-soft);}
@@ -96,6 +111,9 @@
     header.brand{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
     .card-shell{box-shadow:none; border:1px solid #ccc;}
     section{page-break-inside:avoid;}
+    details{display:block;}
+    details > *{display:block;}
+    .lead-card > summary::before{content:"";}
   }
 </style>
 </head>
@@ -228,142 +246,190 @@
     <div class="stat"><div class="n">0</div><div class="l">Rejected</div></div>
   </div>
   <table style="margin-top:1rem;">
-    <tr><th>Route code</th><th>Count</th></tr>
+    <tr><th>Route code</th><th>What it means</th><th>Count</th></tr>
     
-    <tr><td><code>score_band</code></td><td>4</td></tr>
     
-    <tr><td><code>score_ok</code></td><td>3</td></tr>
+    <tr>
+      <td><strong>Human review: mid score</strong><br><code style="font-size:0.72rem;">score_band</code></td>
+      <td class="muted">Score 60-79</td>
+      <td>4</td>
+    </tr>
     
-    <tr><td><code>sensitive_content</code></td><td>3</td></tr>
+    
+    <tr>
+      <td><strong>Auto-sent</strong><br><code style="font-size:0.72rem;">score_ok</code></td>
+      <td class="muted">Score 80+, all checks passed, nothing sensitive</td>
+      <td>3</td>
+    </tr>
+    
+    
+    <tr>
+      <td><strong>Human review: forced</strong><br><code style="font-size:0.72rem;">sensitive_content</code></td>
+      <td class="muted">Mentions a competitor product, the IBM/DataStax acquisition, or a renewal/contract</td>
+      <td>3</td>
+    </tr>
     
   </table>
 </section>
 
+<section class="card-shell">
+  <h2>How the account score works</h2>
+  
+  <div class="legend-box">
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:var(--teal)"></div>
+      <div><div class="t">Evidence &middot; max 60</div><div class="d">Top 2 signals, recency decay, confidence</div></div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:var(--blue)"></div>
+      <div><div class="t">ICP &middot; max 25</div><div class="d">Company size band + industry bonus</div></div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:var(--purple)"></div>
+      <div><div class="t">Why now &middot; max 15</div><div class="d">A recent signal shows intent</div></div>
+    </div>
+  </div>
+  <div class="legend-totals">
+    Total max <strong>100</strong> &middot;
+    qualify at <strong>60+</strong> &middot;
+    auto-approve at <strong>80+</strong> &middot;
+    see <a href="PRD.md#9-scoring-model-formulas-weights-and-parameters">PRD §9</a>
+  </div>
+</section>
+
 <section>
-  <h2 style="border:none; margin-bottom:1rem;">Leads</h2>
+  <h2 style="border:none; margin-bottom:0.3rem;">Leads</h2>
+  <p class="expand-hint">Click a lead to expand it. Printing (&#8984;/Ctrl+P) expands every card automatically.</p>
   
   
   
-  <div class="card-shell lead-card">
-    <div class="lead-top">
-      <div>
-        <span class="lead-name">Maya Rosen</span>
-        <span class="lead-sub">&middot; decision maker &middot; Northwind Payments</span>
+  <details class="card-shell lead-card">
+    <summary>
+      <div class="lead-top">
+        <div>
+          <span class="lead-name">Maya Rosen</span>
+          <span class="lead-sub">&middot; VP Engineering &middot; Northwind Payments</span>
+        </div>
+        <div><span class="pill pill-pending">EMAILED</span> <strong style="margin-left:0.5rem;">96</strong></div>
       </div>
-      <div><span class="pill pill-pending">EMAILED</span></div>
-    </div>
+    </summary>
+    <div class="lead-card-body">
+      
+      <div class="score-bar">
+        <span class="score-seg-evidence" style="width:58.2%"></span>
+        <span class="score-seg-icp" style="width:26.1%"></span>
+        <span class="score-seg-whynow" style="width:15.7%"></span>
+      </div>
+      <div class="score-legend">
+        <span><i style="background:var(--teal)"></i>Evidence 55.7</span>
+        <span><i style="background:var(--blue)"></i>ICP 25</span>
+        <span><i style="background:var(--purple)"></i>Why now 15</span>
+        <span>&middot; Account score <strong>96</strong> (QUALIFIED)</span>
+      </div>
+      <p class="muted" style="font-size:0.8rem; margin:0.5rem 0 0;">Account score 96 &gt;= threshold 60 (evidence=55.7, icp=25, why_now=15)</p>
+      <p style="font-size:0.8rem; margin:0.3rem 0 0;"><a href="https://linkedin.example/in/maya-rosen">https://linkedin.example/in/maya-rosen</a></p>
 
-    
-    <div class="score-bar">
-      <span class="score-seg-evidence" style="width:58.2%"></span>
-      <span class="score-seg-icp" style="width:26.1%"></span>
-      <span class="score-seg-whynow" style="width:15.7%"></span>
-    </div>
-    <div class="score-legend">
-      <span><i style="background:var(--teal)"></i>Evidence 55.7</span>
-      <span><i style="background:var(--blue)"></i>ICP 25</span>
-      <span><i style="background:var(--purple)"></i>Why now 15</span>
-      <span>&middot; Account score <strong>96</strong> (QUALIFIED)</span>
-    </div>
-    <p class="muted" style="font-size:0.8rem; margin:0.5rem 0 0;">Account score 96 &gt;= threshold 60 (evidence=55.7, icp=25, why_now=15)</p>
-
-    
-    <div class="message-block">
-      <div class="mhead">
-        <span class="chan">linkedin/invite</span>
-        <span class="pill pill-ok">SENT</span>
-        <span class="muted" style="font-size:0.78rem;">route: auto</span>
-      </div>
-      <p class="reason">account score 96 &gt;= auto-approve threshold 80</p>
       
-      <div class="message-body">Hi Maya, I came across how Northwind Payments runs fraud scoring with low-latency reads across three regions. I&#39;m Oz, GTM Engineer at ScyllaDB, and I&#39;d like to connect with leaders working on multi-region data layers.</div>
-      
-      <ul class="evidence-list">
+      <div class="message-block">
+        <div class="mhead">
+          <span class="chan">linkedin/invite</span>
+          <span class="pill pill-ok">SENT</span>
+          <span class="muted" style="font-size:0.78rem;">route: auto</span>
+        </div>
+        <p class="reason">account score 96 &gt;= auto-approve threshold 80</p>
         
-        <li><code>s01</code> customer_reference (high, 2025-11-12) &middot; <a href="https://competitor.example/customers/northwind-payments">https://competitor.example/customers/northwind-payments</a></li>
+        <div class="message-body">Hi Maya, I came across how Northwind Payments runs fraud scoring with low-latency reads across three regions. I&#39;m Oz, GTM Engineer at ScyllaDB, and I&#39;d like to connect with leaders working on multi-region data layers.</div>
         
-      </ul>
-      
-    </div>
-    
-    <div class="message-block">
-      <div class="mhead">
-        <span class="chan">email/warm</span>
-        <span class="pill pill-ok">SENT</span>
-        <span class="muted" style="font-size:0.78rem;">route: human</span>
+        <ul class="evidence-list">
+          
+          <li><code>s01</code> customer_reference (high, 2025-11-12) &middot; <a href="https://competitor.example/customers/northwind-payments">https://competitor.example/customers/northwind-payments</a></li>
+          
+        </ul>
+        
       </div>
-      <p class="reason">forced: mentions a competitor product, the IBM/DataStax acquisition, or a renewal/contract - overrides account score and approval_mode (PRD §9.6)</p>
-      <div class="message-subject">Fraud scoring throughput at 40k TPS</div>
-      <div class="message-body">Thanks for connecting, Maya. I came across a customer reference describing how Northwind Payments runs fraud scoring on Astra DB, with single-digit millisecond reads across three regions at 40k transactions per second. With IBM&#39;s DataStax acquisition now complete, this may be a natural moment to review options. ScyllaDB offers higher throughput per node, which typically means fewer nodes and lower infrastructure cost for workloads like that. Would you be open to comparing notes on how your fraud scoring cluster is sized?
+      
+      <div class="message-block">
+        <div class="mhead">
+          <span class="chan">email/warm</span>
+          <span class="pill pill-ok">SENT</span>
+          <span class="muted" style="font-size:0.78rem;">route: human</span>
+        </div>
+        <p class="reason">forced: mentions a competitor product, the IBM/DataStax acquisition, or a renewal/contract - overrides account score and approval_mode (PRD §9.6)</p>
+        <div class="message-subject">Fraud scoring throughput at 40k TPS</div>
+        <div class="message-body">Thanks for connecting, Maya. I came across a customer reference describing how Northwind Payments runs fraud scoring on Astra DB, with single-digit millisecond reads across three regions at 40k transactions per second. With IBM&#39;s DataStax acquisition now complete, this may be a natural moment to review options. ScyllaDB offers higher throughput per node, which typically means fewer nodes and lower infrastructure cost for workloads like that. Would you be open to comparing notes on how your fraud scoring cluster is sized?
 
 Oz
 GTM Engineer, ScyllaDB
 
 Reply STOP to opt out.</div>
-      
-      <ul class="evidence-list">
         
-        <li><code>s01</code> customer_reference (high, 2025-11-12) &middot; <a href="https://competitor.example/customers/northwind-payments">https://competitor.example/customers/northwind-payments</a></li>
+        <ul class="evidence-list">
+          
+          <li><code>s01</code> customer_reference (high, 2025-11-12) &middot; <a href="https://competitor.example/customers/northwind-payments">https://competitor.example/customers/northwind-payments</a></li>
+          
+        </ul>
         
-      </ul>
-      
-    </div>
-    
-  </div>
-  
-  
-  
-  <div class="card-shell lead-card">
-    <div class="lead-top">
-      <div>
-        <span class="lead-name">Tom Hale</span>
-        <span class="lead-sub">&middot; practitioner &middot; Northwind Payments</span>
       </div>
-      <div><span class="pill pill-pending">EMAILED</span></div>
+      
     </div>
+  </details>
+  
+  
+  
+  <details class="card-shell lead-card">
+    <summary>
+      <div class="lead-top">
+        <div>
+          <span class="lead-name">Tom Hale</span>
+          <span class="lead-sub">&middot; Staff SRE &middot; Northwind Payments</span>
+        </div>
+        <div><span class="pill pill-pending">EMAILED</span> <strong style="margin-left:0.5rem;">96</strong></div>
+      </div>
+    </summary>
+    <div class="lead-card-body">
+      
+      <div class="score-bar">
+        <span class="score-seg-evidence" style="width:58.2%"></span>
+        <span class="score-seg-icp" style="width:26.1%"></span>
+        <span class="score-seg-whynow" style="width:15.7%"></span>
+      </div>
+      <div class="score-legend">
+        <span><i style="background:var(--teal)"></i>Evidence 55.7</span>
+        <span><i style="background:var(--blue)"></i>ICP 25</span>
+        <span><i style="background:var(--purple)"></i>Why now 15</span>
+        <span>&middot; Account score <strong>96</strong> (QUALIFIED)</span>
+      </div>
+      <p class="muted" style="font-size:0.8rem; margin:0.5rem 0 0;">Account score 96 &gt;= threshold 60 (evidence=55.7, icp=25, why_now=15)</p>
+      <p style="font-size:0.8rem; margin:0.3rem 0 0;"><a href="https://linkedin.example/in/tom-hale">https://linkedin.example/in/tom-hale</a></p>
 
-    
-    <div class="score-bar">
-      <span class="score-seg-evidence" style="width:58.2%"></span>
-      <span class="score-seg-icp" style="width:26.1%"></span>
-      <span class="score-seg-whynow" style="width:15.7%"></span>
-    </div>
-    <div class="score-legend">
-      <span><i style="background:var(--teal)"></i>Evidence 55.7</span>
-      <span><i style="background:var(--blue)"></i>ICP 25</span>
-      <span><i style="background:var(--purple)"></i>Why now 15</span>
-      <span>&middot; Account score <strong>96</strong> (QUALIFIED)</span>
-    </div>
-    <p class="muted" style="font-size:0.8rem; margin:0.5rem 0 0;">Account score 96 &gt;= threshold 60 (evidence=55.7, icp=25, why_now=15)</p>
-
-    
-    <div class="message-block">
-      <div class="mhead">
-        <span class="chan">linkedin/invite</span>
-        <span class="pill pill-ok">SENT</span>
-        <span class="muted" style="font-size:0.78rem;">route: auto</span>
-      </div>
-      <p class="reason">account score 96 &gt;= auto-approve threshold 80</p>
       
-      <div class="message-body">Hi Tom, I saw the Northwind Payments team is focusing on capacity planning and cost and latency improvements for its multi-region data layer. I&#39;m a GTM Engineer at ScyllaDB and would like to connect with SREs working on that kind of problem.</div>
-      
-      <ul class="evidence-list">
+      <div class="message-block">
+        <div class="mhead">
+          <span class="chan">linkedin/invite</span>
+          <span class="pill pill-ok">SENT</span>
+          <span class="muted" style="font-size:0.78rem;">route: auto</span>
+        </div>
+        <p class="reason">account score 96 &gt;= auto-approve threshold 80</p>
         
-        <li><code>s02</code> job_post (high, 2026-09-20) &middot; <a href="https://jobs.example/northwind/staff-sre-data">https://jobs.example/northwind/staff-sre-data</a></li>
+        <div class="message-body">Hi Tom, I saw the Northwind Payments team is focusing on capacity planning and cost and latency improvements for its multi-region data layer. I&#39;m a GTM Engineer at ScyllaDB and would like to connect with SREs working on that kind of problem.</div>
         
-      </ul>
-      
-    </div>
-    
-    <div class="message-block">
-      <div class="mhead">
-        <span class="chan">email/cold</span>
-        <span class="pill pill-ok">SENT</span>
-        <span class="muted" style="font-size:0.78rem;">route: auto</span>
+        <ul class="evidence-list">
+          
+          <li><code>s02</code> job_post (high, 2026-09-20) &middot; <a href="https://jobs.example/northwind/staff-sre-data">https://jobs.example/northwind/staff-sre-data</a></li>
+          
+        </ul>
+        
       </div>
-      <p class="reason">account score 96 &gt;= auto-approve threshold 80</p>
-      <div class="message-subject">Predictable p99 for a multi-region data layer</div>
-      <div class="message-body">Hi Tom,
+      
+      <div class="message-block">
+        <div class="mhead">
+          <span class="chan">email/cold</span>
+          <span class="pill pill-ok">SENT</span>
+          <span class="muted" style="font-size:0.78rem;">route: auto</span>
+        </div>
+        <p class="reason">account score 96 &gt;= auto-approve threshold 80</p>
+        <div class="message-subject">Predictable p99 for a multi-region data layer</div>
+        <div class="message-body">Hi Tom,
 
 The Northwind Payments team is focused on capacity planning and evaluating cost and latency improvements for its multi-region data layer. If tail latency is part of that evaluation, ScyllaDB may be worth a look. Its shard-per-core C++ architecture has no JVM garbage-collection pauses, which keeps p99 latency predictable under load.
 
@@ -373,70 +439,74 @@ Oz
 GTM Engineer, ScyllaDB
 
 Reply STOP to opt out.</div>
-      
-      <ul class="evidence-list">
         
-        <li><code>s02</code> job_post (high, 2026-09-20) &middot; <a href="https://jobs.example/northwind/staff-sre-data">https://jobs.example/northwind/staff-sre-data</a></li>
+        <ul class="evidence-list">
+          
+          <li><code>s02</code> job_post (high, 2026-09-20) &middot; <a href="https://jobs.example/northwind/staff-sre-data">https://jobs.example/northwind/staff-sre-data</a></li>
+          
+        </ul>
         
-      </ul>
-      
-    </div>
-    
-  </div>
-  
-  
-  
-  <div class="card-shell lead-card">
-    <div class="lead-top">
-      <div>
-        <span class="lead-name">Joris de Vries</span>
-        <span class="lead-sub">&middot; decision maker &middot; Lumen Logistics</span>
       </div>
-      <div><span class="pill pill-pending">EMAILED</span></div>
+      
     </div>
+  </details>
+  
+  
+  
+  <details class="card-shell lead-card">
+    <summary>
+      <div class="lead-top">
+        <div>
+          <span class="lead-name">Joris de Vries</span>
+          <span class="lead-sub">&middot; Head of Platform &middot; Lumen Logistics</span>
+        </div>
+        <div><span class="pill pill-pending">EMAILED</span> <strong style="margin-left:0.5rem;">76</strong></div>
+      </div>
+    </summary>
+    <div class="lead-card-body">
+      
+      <div class="score-bar">
+        <span class="score-seg-evidence" style="width:54.1%"></span>
+        <span class="score-seg-icp" style="width:26.2%"></span>
+        <span class="score-seg-whynow" style="width:19.7%"></span>
+      </div>
+      <div class="score-legend">
+        <span><i style="background:var(--teal)"></i>Evidence 41.3</span>
+        <span><i style="background:var(--blue)"></i>ICP 20</span>
+        <span><i style="background:var(--purple)"></i>Why now 15</span>
+        <span>&middot; Account score <strong>76</strong> (QUALIFIED)</span>
+      </div>
+      <p class="muted" style="font-size:0.8rem; margin:0.5rem 0 0;">Account score 76 &gt;= threshold 60 (evidence=41.3, icp=20, why_now=15)</p>
+      <p style="font-size:0.8rem; margin:0.3rem 0 0;"><a href="https://linkedin.example/in/joris-devries">https://linkedin.example/in/joris-devries</a></p>
 
-    
-    <div class="score-bar">
-      <span class="score-seg-evidence" style="width:54.1%"></span>
-      <span class="score-seg-icp" style="width:26.2%"></span>
-      <span class="score-seg-whynow" style="width:19.7%"></span>
-    </div>
-    <div class="score-legend">
-      <span><i style="background:var(--teal)"></i>Evidence 41.3</span>
-      <span><i style="background:var(--blue)"></i>ICP 20</span>
-      <span><i style="background:var(--purple)"></i>Why now 15</span>
-      <span>&middot; Account score <strong>76</strong> (QUALIFIED)</span>
-    </div>
-    <p class="muted" style="font-size:0.8rem; margin:0.5rem 0 0;">Account score 76 &gt;= threshold 60 (evidence=41.3, icp=20, why_now=15)</p>
-
-    
-    <div class="message-block">
-      <div class="mhead">
-        <span class="chan">linkedin/invite</span>
-        <span class="pill pill-ok">SENT</span>
-        <span class="muted" style="font-size:0.78rem;">route: human</span>
-      </div>
-      <p class="reason">account score 76 is below the auto-approve threshold of 80</p>
       
-      <div class="message-body">Hi Joris - I saw that Lumen Logistics&#39; shipment-tracking service writes 2B events/day, and that your team is focused on modernising that cluster to reduce operational toil. I&#39;m Oz, GTM Engineer at ScyllaDB - would be glad to connect.</div>
-      
-      <ul class="evidence-list">
+      <div class="message-block">
+        <div class="mhead">
+          <span class="chan">linkedin/invite</span>
+          <span class="pill pill-ok">SENT</span>
+          <span class="muted" style="font-size:0.78rem;">route: human</span>
+        </div>
+        <p class="reason">account score 76 is below the auto-approve threshold of 80</p>
         
-        <li><code>s03</code> job_post (high, 2026-08-05) &middot; <a href="https://jobs.example/lumen/platform-engineer">https://jobs.example/lumen/platform-engineer</a></li>
+        <div class="message-body">Hi Joris - I saw that Lumen Logistics&#39; shipment-tracking service writes 2B events/day, and that your team is focused on modernising that cluster to reduce operational toil. I&#39;m Oz, GTM Engineer at ScyllaDB - would be glad to connect.</div>
         
-      </ul>
-      
-    </div>
-    
-    <div class="message-block">
-      <div class="mhead">
-        <span class="chan">email/cold</span>
-        <span class="pill pill-ok">SENT</span>
-        <span class="muted" style="font-size:0.78rem;">route: human</span>
+        <ul class="evidence-list">
+          
+          <li><code>s03</code> job_post (high, 2026-08-05) &middot; <a href="https://jobs.example/lumen/platform-engineer">https://jobs.example/lumen/platform-engineer</a></li>
+          
+        </ul>
+        
       </div>
-      <p class="reason">forced: mentions a competitor product, the IBM/DataStax acquisition, or a renewal/contract - overrides account score and approval_mode (PRD §9.6)</p>
-      <div class="message-subject">Scaling 2B shipment-tracking events/day</div>
-      <div class="message-body">Hi Joris,
+      
+      <div class="message-block">
+        <div class="mhead">
+          <span class="chan">email/cold</span>
+          <span class="pill pill-ok">SENT</span>
+          <span class="muted" style="font-size:0.78rem;">route: human</span>
+        </div>
+        <p class="reason">forced: mentions a competitor product, the IBM/DataStax acquisition, or a renewal/contract - overrides account score and approval_mode (PRD §9.6)</p>
+        <div class="message-subject">Scaling 2B shipment-tracking events/day</div>
+        <div class="message-body">Hi Joris,
 
 Lumen Logistics&#39; shipment-tracking service writes 2B events/day to DataStax Enterprise 6.8, and your team is focused on modernising that cluster and reducing operational toil. With IBM having completed its DataStax acquisition, it may also be a natural moment to review options.
 
@@ -448,70 +518,74 @@ Oz
 GTM Engineer, ScyllaDB
 
 Reply STOP to opt out.</div>
-      
-      <ul class="evidence-list">
         
-        <li><code>s03</code> job_post (high, 2026-08-05) &middot; <a href="https://jobs.example/lumen/platform-engineer">https://jobs.example/lumen/platform-engineer</a></li>
+        <ul class="evidence-list">
+          
+          <li><code>s03</code> job_post (high, 2026-08-05) &middot; <a href="https://jobs.example/lumen/platform-engineer">https://jobs.example/lumen/platform-engineer</a></li>
+          
+        </ul>
         
-      </ul>
-      
-    </div>
-    
-  </div>
-  
-  
-  
-  <div class="card-shell lead-card">
-    <div class="lead-top">
-      <div>
-        <span class="lead-name">Lior Ben-David</span>
-        <span class="lead-sub">&middot; practitioner &middot; Kestrel Games</span>
       </div>
-      <div><span class="pill pill-pending">EMAILED</span></div>
+      
     </div>
+  </details>
+  
+  
+  
+  <details class="card-shell lead-card">
+    <summary>
+      <div class="lead-top">
+        <div>
+          <span class="lead-name">Lior Ben-David</span>
+          <span class="lead-sub">&middot; Principal Engineer &middot; Kestrel Games</span>
+        </div>
+        <div><span class="pill pill-pending">EMAILED</span> <strong style="margin-left:0.5rem;">78</strong></div>
+      </div>
+    </summary>
+    <div class="lead-card-body">
+      
+      <div class="score-bar">
+        <span class="score-seg-evidence" style="width:55.3%"></span>
+        <span class="score-seg-icp" style="width:25.5%"></span>
+        <span class="score-seg-whynow" style="width:19.1%"></span>
+      </div>
+      <div class="score-legend">
+        <span><i style="background:var(--teal)"></i>Evidence 43.3</span>
+        <span><i style="background:var(--blue)"></i>ICP 20</span>
+        <span><i style="background:var(--purple)"></i>Why now 15</span>
+        <span>&middot; Account score <strong>78</strong> (QUALIFIED)</span>
+      </div>
+      <p class="muted" style="font-size:0.8rem; margin:0.5rem 0 0;">Account score 78 &gt;= threshold 60 (evidence=43.3, icp=20, why_now=15)</p>
+      <p style="font-size:0.8rem; margin:0.3rem 0 0;"><a href="https://linkedin.example/in/lior-ben-david">https://linkedin.example/in/lior-ben-david</a></p>
 
-    
-    <div class="score-bar">
-      <span class="score-seg-evidence" style="width:55.3%"></span>
-      <span class="score-seg-icp" style="width:25.5%"></span>
-      <span class="score-seg-whynow" style="width:19.1%"></span>
-    </div>
-    <div class="score-legend">
-      <span><i style="background:var(--teal)"></i>Evidence 43.3</span>
-      <span><i style="background:var(--blue)"></i>ICP 20</span>
-      <span><i style="background:var(--purple)"></i>Why now 15</span>
-      <span>&middot; Account score <strong>78</strong> (QUALIFIED)</span>
-    </div>
-    <p class="muted" style="font-size:0.8rem; margin:0.5rem 0 0;">Account score 78 &gt;= threshold 60 (evidence=43.3, icp=20, why_now=15)</p>
-
-    
-    <div class="message-block">
-      <div class="mhead">
-        <span class="chan">linkedin/invite</span>
-        <span class="pill pill-ok">SENT</span>
-        <span class="muted" style="font-size:0.78rem;">route: human</span>
-      </div>
-      <p class="reason">account score 78 is below the auto-approve threshold of 80</p>
       
-      <div class="message-body">Hi Lior, I came across your talk on running a 60-node self-managed Cassandra cluster for the Kestrel Games leaderboards, especially the tail latency and GC/compaction tuning side. I&#39;m Oz, GTM Engineer at ScyllaDB. Would be glad to connect.</div>
-      
-      <ul class="evidence-list">
+      <div class="message-block">
+        <div class="mhead">
+          <span class="chan">linkedin/invite</span>
+          <span class="pill pill-ok">SENT</span>
+          <span class="muted" style="font-size:0.78rem;">route: human</span>
+        </div>
+        <p class="reason">account score 78 is below the auto-approve threshold of 80</p>
         
-        <li><code>s06</code> conference_talk (high, 2026-05-14) &middot; <a href="https://conf.example/2026/talks/kestrel-leaderboards">https://conf.example/2026/talks/kestrel-leaderboards</a></li>
+        <div class="message-body">Hi Lior, I came across your talk on running a 60-node self-managed Cassandra cluster for the Kestrel Games leaderboards, especially the tail latency and GC/compaction tuning side. I&#39;m Oz, GTM Engineer at ScyllaDB. Would be glad to connect.</div>
         
-      </ul>
-      
-    </div>
-    
-    <div class="message-block">
-      <div class="mhead">
-        <span class="chan">email/warm</span>
-        <span class="pill pill-ok">SENT</span>
-        <span class="muted" style="font-size:0.78rem;">route: human</span>
+        <ul class="evidence-list">
+          
+          <li><code>s06</code> conference_talk (high, 2026-05-14) &middot; <a href="https://conf.example/2026/talks/kestrel-leaderboards">https://conf.example/2026/talks/kestrel-leaderboards</a></li>
+          
+        </ul>
+        
       </div>
-      <p class="reason">account score 78 is below the auto-approve threshold of 80</p>
-      <div class="message-subject">GC pauses and p99 on a Cassandra leaderboard</div>
-      <div class="message-body">Hi Lior,
+      
+      <div class="message-block">
+        <div class="mhead">
+          <span class="chan">email/warm</span>
+          <span class="pill pill-ok">SENT</span>
+          <span class="muted" style="font-size:0.78rem;">route: human</span>
+        </div>
+        <p class="reason">account score 78 is below the auto-approve threshold of 80</p>
+        <div class="message-subject">GC pauses and p99 on a Cassandra leaderboard</div>
+        <div class="message-body">Hi Lior,
 
 Thanks for connecting. Your talk on running 60 self-managed Apache Cassandra nodes for the Kestrel Games leaderboard stuck with me, especially the tail latency and GC/compaction tuning side of it.
 
@@ -523,70 +597,74 @@ Oz
 GTM Engineer, ScyllaDB
 
 Reply STOP to opt out.</div>
-      
-      <ul class="evidence-list">
         
-        <li><code>s06</code> conference_talk (high, 2026-05-14) &middot; <a href="https://conf.example/2026/talks/kestrel-leaderboards">https://conf.example/2026/talks/kestrel-leaderboards</a></li>
+        <ul class="evidence-list">
+          
+          <li><code>s06</code> conference_talk (high, 2026-05-14) &middot; <a href="https://conf.example/2026/talks/kestrel-leaderboards">https://conf.example/2026/talks/kestrel-leaderboards</a></li>
+          
+        </ul>
         
-      </ul>
-      
-    </div>
-    
-  </div>
-  
-  
-  
-  <div class="card-shell lead-card">
-    <div class="lead-top">
-      <div>
-        <span class="lead-name">Dana Weiss</span>
-        <span class="lead-sub">&middot; decision maker &middot; Brightwave AI</span>
       </div>
-      <div><span class="pill pill-pending">EMAILED</span></div>
+      
     </div>
+  </details>
+  
+  
+  
+  <details class="card-shell lead-card">
+    <summary>
+      <div class="lead-top">
+        <div>
+          <span class="lead-name">Dana Weiss</span>
+          <span class="lead-sub">&middot; Head of Infrastructure &middot; Brightwave AI</span>
+        </div>
+        <div><span class="pill pill-pending">EMAILED</span> <strong style="margin-left:0.5rem;">61</strong></div>
+      </div>
+    </summary>
+    <div class="lead-card-body">
+      
+      <div class="score-bar">
+        <span class="score-seg-evidence" style="width:50.7%"></span>
+        <span class="score-seg-icp" style="width:24.6%"></span>
+        <span class="score-seg-whynow" style="width:24.6%"></span>
+      </div>
+      <div class="score-legend">
+        <span><i style="background:var(--teal)"></i>Evidence 30.9</span>
+        <span><i style="background:var(--blue)"></i>ICP 15</span>
+        <span><i style="background:var(--purple)"></i>Why now 15</span>
+        <span>&middot; Account score <strong>61</strong> (QUALIFIED)</span>
+      </div>
+      <p class="muted" style="font-size:0.8rem; margin:0.5rem 0 0;">Account score 61 &gt;= threshold 60 (evidence=30.9, icp=15, why_now=15)</p>
+      <p style="font-size:0.8rem; margin:0.3rem 0 0;"><a href="https://linkedin.example/in/dana-weiss">https://linkedin.example/in/dana-weiss</a></p>
 
-    
-    <div class="score-bar">
-      <span class="score-seg-evidence" style="width:50.7%"></span>
-      <span class="score-seg-icp" style="width:24.6%"></span>
-      <span class="score-seg-whynow" style="width:24.6%"></span>
-    </div>
-    <div class="score-legend">
-      <span><i style="background:var(--teal)"></i>Evidence 30.9</span>
-      <span><i style="background:var(--blue)"></i>ICP 15</span>
-      <span><i style="background:var(--purple)"></i>Why now 15</span>
-      <span>&middot; Account score <strong>61</strong> (QUALIFIED)</span>
-    </div>
-    <p class="muted" style="font-size:0.8rem; margin:0.5rem 0 0;">Account score 61 &gt;= threshold 60 (evidence=30.9, icp=15, why_now=15)</p>
-
-    
-    <div class="message-block">
-      <div class="mhead">
-        <span class="chan">linkedin/invite</span>
-        <span class="pill pill-ok">SENT</span>
-        <span class="muted" style="font-size:0.78rem;">route: human</span>
-      </div>
-      <p class="reason">account score 61 is below the auto-approve threshold of 80</p>
       
-      <div class="message-body">Hi Dana, congrats on the move to Brightwave AI - I came across your previous work on fraud-scoring infrastructure and would be glad to connect.</div>
-      
-      <ul class="evidence-list">
+      <div class="message-block">
+        <div class="mhead">
+          <span class="chan">linkedin/invite</span>
+          <span class="pill pill-ok">SENT</span>
+          <span class="muted" style="font-size:0.78rem;">route: human</span>
+        </div>
+        <p class="reason">account score 61 is below the auto-approve threshold of 80</p>
         
-        <li><code>champ_p12_a01</code> champion_move (high, 2026-07-01) &middot; <a href="https://competitor.example/customers/northwind-payments">https://competitor.example/customers/northwind-payments</a></li>
+        <div class="message-body">Hi Dana, congrats on the move to Brightwave AI - I came across your previous work on fraud-scoring infrastructure and would be glad to connect.</div>
         
-      </ul>
-      
-    </div>
-    
-    <div class="message-block">
-      <div class="mhead">
-        <span class="chan">email/cold</span>
-        <span class="pill pill-ok">SENT</span>
-        <span class="muted" style="font-size:0.78rem;">route: human</span>
+        <ul class="evidence-list">
+          
+          <li><code>champ_p12_a01</code> champion_move (high, 2026-07-01) &middot; <a href="https://competitor.example/customers/northwind-payments">https://competitor.example/customers/northwind-payments</a></li>
+          
+        </ul>
+        
       </div>
-      <p class="reason">forced: mentions a competitor product, the IBM/DataStax acquisition, or a renewal/contract - overrides account score and approval_mode (PRD §9.6)</p>
-      <div class="message-subject">Throughput per node for Cassandra-style workloads</div>
-      <div class="message-body">Hi Dana,
+      
+      <div class="message-block">
+        <div class="mhead">
+          <span class="chan">email/cold</span>
+          <span class="pill pill-ok">SENT</span>
+          <span class="muted" style="font-size:0.78rem;">route: human</span>
+        </div>
+        <p class="reason">forced: mentions a competitor product, the IBM/DataStax acquisition, or a renewal/contract - overrides account score and approval_mode (PRD §9.6)</p>
+        <div class="message-subject">Throughput per node for Cassandra-style workloads</div>
+        <div class="message-body">Hi Dana,
 
 Congrats on the move to Brightwave AI. Your background at Northwind Payments, where fraud scoring runs on Astra DB, puts you close to the kind of Cassandra-style workload ScyllaDB is built for.
 
@@ -598,18 +676,84 @@ Oz
 GTM Engineer, ScyllaDB
 
 Reply STOP to opt out.</div>
-      
-      <ul class="evidence-list">
         
-        <li><code>champ_p12_a01</code> champion_move (high, 2026-07-01) &middot; <a href="https://competitor.example/customers/northwind-payments">https://competitor.example/customers/northwind-payments</a></li>
+        <ul class="evidence-list">
+          
+          <li><code>champ_p12_a01</code> champion_move (high, 2026-07-01) &middot; <a href="https://competitor.example/customers/northwind-payments">https://competitor.example/customers/northwind-payments</a></li>
+          
+        </ul>
         
-      </ul>
+      </div>
       
     </div>
-    
-  </div>
+  </details>
   
 </section>
+
+
+<section class="card-shell">
+  <h2>Sequence timeline</h2>
+  <table>
+    <tr><th>Lead</th><th>Invite sent</th><th>Accepted</th><th>Next action</th><th>Due</th><th>Days remaining</th><th>Status</th></tr>
+    
+    
+    <tr>
+      <td>Maya Rosen</td>
+      <td>2026-10-08</td>
+      <td>2026-10-10</td>
+      <td>Done (warm email)</td>
+      <td>2026-10-10</td>
+      <td>0</td>
+      <td>Sent on 2026-10-10</td>
+    </tr>
+    
+    
+    <tr>
+      <td>Tom Hale</td>
+      <td>2026-10-08</td>
+      <td>-</td>
+      <td>Done (cold email)</td>
+      <td>2026-10-15</td>
+      <td>0</td>
+      <td>Sent on 2026-10-15</td>
+    </tr>
+    
+    
+    <tr>
+      <td>Joris de Vries</td>
+      <td>2026-10-08</td>
+      <td>-</td>
+      <td>Done (cold email)</td>
+      <td>2026-10-15</td>
+      <td>0</td>
+      <td>Sent on 2026-10-15</td>
+    </tr>
+    
+    
+    <tr>
+      <td>Lior Ben-David</td>
+      <td>2026-10-08</td>
+      <td>2026-10-12</td>
+      <td>Done (warm email)</td>
+      <td>2026-10-12</td>
+      <td>0</td>
+      <td>Sent on 2026-10-12</td>
+    </tr>
+    
+    
+    <tr>
+      <td>Dana Weiss</td>
+      <td>2026-10-08</td>
+      <td>-</td>
+      <td>Done (cold email)</td>
+      <td>2026-10-15</td>
+      <td>0</td>
+      <td>Sent on 2026-10-15</td>
+    </tr>
+    
+  </table>
+</section>
+
 
 
 
@@ -642,11 +786,13 @@ Reply STOP to opt out.</div>
 <section class="card-shell">
   <h2>All leads</h2>
   <table>
-    <tr><th>Lead</th><th>Company</th><th>Persona</th><th>Status</th><th>Reason</th></tr>
+    <tr><th>Lead</th><th>Title</th><th>LinkedIn</th><th>Company</th><th>Persona</th><th>Status</th><th>Reason</th></tr>
     
     
     <tr>
       <td>Maya Rosen</td>
+      <td>VP Engineering</td>
+      <td><a href="https://linkedin.example/in/maya-rosen">profile</a></td>
       <td>Northwind Payments</td>
       <td>decision_maker</td>
       <td><span class="pill pill-pending">EMAILED</span></td>
@@ -656,6 +802,8 @@ Reply STOP to opt out.</div>
     
     <tr>
       <td>Tom Hale</td>
+      <td>Staff SRE</td>
+      <td><a href="https://linkedin.example/in/tom-hale">profile</a></td>
       <td>Northwind Payments</td>
       <td>practitioner</td>
       <td><span class="pill pill-pending">EMAILED</span></td>
@@ -665,6 +813,8 @@ Reply STOP to opt out.</div>
     
     <tr>
       <td>Ana Costa</td>
+      <td>Senior Data Engineer</td>
+      <td><a href="https://linkedin.example/in/ana-costa">profile</a></td>
       <td>Northwind Payments</td>
       <td>practitioner</td>
       <td><span class="pill pill-off">DEPRIORITIZED</span></td>
@@ -674,6 +824,8 @@ Reply STOP to opt out.</div>
     
     <tr>
       <td>Ruth Green</td>
+      <td>HR Director</td>
+      <td><a href="https://linkedin.example/in/ruth-green">profile</a></td>
       <td>Northwind Payments</td>
       <td>-</td>
       <td><span class="pill pill-bad">REJECTED</span></td>
@@ -683,6 +835,8 @@ Reply STOP to opt out.</div>
     
     <tr>
       <td>Joris de Vries</td>
+      <td>Head of Platform</td>
+      <td><a href="https://linkedin.example/in/joris-devries">profile</a></td>
       <td>Lumen Logistics</td>
       <td>decision_maker</td>
       <td><span class="pill pill-pending">EMAILED</span></td>
@@ -692,6 +846,8 @@ Reply STOP to opt out.</div>
     
     <tr>
       <td>Rita Okafor</td>
+      <td>SRE</td>
+      <td><a href="https://linkedin.example/in/rita-okafor">profile</a></td>
       <td>Lumen Logistics</td>
       <td>-</td>
       <td><span class="pill pill-off">SUPPRESSED</span></td>
@@ -701,6 +857,8 @@ Reply STOP to opt out.</div>
     
     <tr>
       <td>Jason Park</td>
+      <td>Director of Engineering</td>
+      <td><a href="https://linkedin.example/in/jason-park">profile</a></td>
       <td>Orbit Media</td>
       <td>-</td>
       <td><span class="pill pill-bad">REJECTED</span></td>
@@ -710,6 +868,8 @@ Reply STOP to opt out.</div>
     
     <tr>
       <td>Lior Ben-David</td>
+      <td>Principal Engineer</td>
+      <td><a href="https://linkedin.example/in/lior-ben-david">profile</a></td>
       <td>Kestrel Games</td>
       <td>practitioner</td>
       <td><span class="pill pill-pending">EMAILED</span></td>
@@ -719,6 +879,8 @@ Reply STOP to opt out.</div>
     
     <tr>
       <td>Cassandra Lee</td>
+      <td>Head of Data</td>
+      <td><a href="https://linkedin.example/in/cassandra-lee">profile</a></td>
       <td>Pinecrest Analytics</td>
       <td>-</td>
       <td><span class="pill pill-bad">REJECTED</span></td>
@@ -728,6 +890,8 @@ Reply STOP to opt out.</div>
     
     <tr>
       <td>Felix Braun</td>
+      <td>VP Engineering</td>
+      <td><a href="https://linkedin.example/in/felix-braun">profile</a></td>
       <td>Quanta Retail</td>
       <td>-</td>
       <td><span class="pill pill-off">SUPPRESSED</span></td>
@@ -737,6 +901,8 @@ Reply STOP to opt out.</div>
     
     <tr>
       <td>Priya Nair</td>
+      <td>Solutions Architect</td>
+      <td><a href="https://linkedin.example/in/priya-nair">profile</a></td>
       <td>DataStax</td>
       <td>-</td>
       <td><span class="pill pill-off">SUPPRESSED</span></td>
@@ -746,6 +912,8 @@ Reply STOP to opt out.</div>
     
     <tr>
       <td>Dana Weiss</td>
+      <td>Head of Infrastructure</td>
+      <td><a href="https://linkedin.example/in/dana-weiss">profile</a></td>
       <td>Brightwave AI</td>
       <td>decision_maker</td>
       <td><span class="pill pill-pending">EMAILED</span></td>
@@ -755,6 +923,8 @@ Reply STOP to opt out.</div>
     
     <tr>
       <td>Nuno Alves</td>
+      <td>CTO</td>
+      <td><a href="https://linkedin.example/in/nuno-alves">profile</a></td>
       <td>Sprocket Labs</td>
       <td>-</td>
       <td><span class="pill pill-bad">REJECTED</span></td>

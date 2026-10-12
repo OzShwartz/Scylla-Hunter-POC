@@ -22,6 +22,13 @@ run() {
 
 run python -m hunter reset
 run python -m hunter run
+
+# Mid-run snapshot: invites sent, nothing simulated yet - shows the
+# sequence-timeline countdown to R3 before it resolves. Not part of the
+# documented quickstart transcript, so it's not logged to run_log.txt.
+python -m hunter report --html > /dev/null
+cp out/report.html examples/report_after_run.html
+
 run python -m hunter review
 run python -m hunter edit 5 --text "Hi Dana, congrats on the move to Brightwave AI - I came across your previous work on fraud-scoring infrastructure and would be glad to connect."
 run python -m hunter approve --all

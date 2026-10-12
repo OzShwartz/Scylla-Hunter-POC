@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scylla Hunter Report</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --navy:#372950; --navy-deep:#111847; --navy-darker:#0e123d; --blue:#3156b4;
+    --teal:#56cde2; --purple:#b194c5;
+    --ink:#201a30; --muted:#6a627d; --line:#e3e0ea; --bg:#ffffff; --bg-soft:#f7f6fb;
+    --ok:#166b49; --ok-bg:#e4f7ee; --pending:#875707; --pending-bg:#fdf1dd;
+    --bad:#a82f40; --bad-bg:#fbe6e9; --off:#6a627d; --off-bg:#eeecf2;
+    --heading-font:"Space Grotesk","Segoe UI",system-ui,sans-serif;
+    --body-font:"Inter","Segoe UI",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    font-family:var(--body-font); color:var(--ink); background:var(--bg-soft); margin:0; padding:0;
+    line-height:1.55; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1040px; margin:0 auto; padding:0 1.5rem 3rem;}
+  h1,h2,h3{font-family:var(--heading-font); font-weight:600; color:var(--navy); letter-spacing:-0.01em;}
+  h2{font-size:1.15rem; margin:0 0 0.9rem; padding-bottom:0.5rem; border-bottom:2px solid var(--line);}
+  h3{font-size:1rem; margin:0;}
+  a{color:var(--blue);}
+  code{background:var(--bg-soft); border:1px solid var(--line); padding:0.08rem 0.35rem; border-radius:4px; font-size:0.85em;}
+  .muted{color:var(--muted);}
+  section{margin:2rem 0;}
+  .card-shell{background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:1.4rem 1.6rem; box-shadow:0 1px 2px rgba(17,24,71,0.04);}
+
+  /* ---- Header ---- */
+  header.brand{background:linear-gradient(135deg, var(--navy-deep) 0%, var(--blue) 100%); padding:2.2rem 1.5rem 2.6rem;}
+  header.brand .wrap{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:1rem; padding-bottom:0;}
+  header.brand .brand-id{display:flex; align-items:center; gap:0.85rem;}
+  header.brand img.logo{height:40px; width:auto; display:block; background:#fff; border-radius:8px; padding:4px 8px;}
+  header.brand .titles h1{color:#fff; margin:0; font-size:1.55rem;}
+  header.brand .titles p{color:#cfd6f5; margin:0.15rem 0 0; font-size:0.9rem;}
+  header.brand .meta{color:#cfd6f5; font-size:0.82rem; text-align:right;}
+  header.brand .meta strong{color:#fff;}
+
+  /* ---- Funnel bars ---- */
+  .funnels{display:grid; grid-template-columns:1fr 1fr; gap:1.4rem;}
+  @media (max-width:760px){ .funnels{grid-template-columns:1fr;} }
+  .funnel-row{display:grid; grid-template-columns:7.5rem 1fr 2.4rem; align-items:center; gap:0.6rem; margin:0.45rem 0; font-size:0.84rem;}
+  .funnel-row .label{color:var(--muted); text-transform:capitalize;}
+  .funnel-track{background:var(--bg-soft); border-radius:5px; height:0.65rem; overflow:hidden;}
+  .funnel-fill{height:100%; border-radius:5px; background:linear-gradient(90deg, var(--teal), var(--blue));}
+  .funnel-row .count{font-weight:600; text-align:right; font-variant-numeric:tabular-nums;}
+
+  /* ---- Stat cards ---- */
+  .stat-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:0.9rem;}
+  .stat{background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:0.9rem 1rem;}
+  .stat .n{font-family:var(--heading-font); font-size:1.5rem; font-weight:700; color:var(--navy);}
+  .stat .l{font-size:0.78rem; color:var(--muted); margin-top:0.15rem;}
+
+  /* ---- Pills ---- */
+  .pill{display:inline-block; font-size:0.72rem; font-weight:600; letter-spacing:0.02em; padding:0.2rem 0.55rem; border-radius:999px; text-transform:uppercase; white-space:nowrap;}
+  .pill-ok{background:var(--ok-bg); color:var(--ok);}
+  .pill-pending{background:var(--pending-bg); color:var(--pending);}
+  .pill-bad{background:var(--bad-bg); color:var(--bad);}
+  .pill-off{background:var(--off-bg); color:var(--off);}
+
+  /* ---- Score legend box ---- */
+  .legend-box{display:grid; grid-template-columns:repeat(auto-fit, minmax(190px,1fr)); gap:1rem; margin-bottom:0.6rem;}
+  .legend-item{display:flex; gap:0.6rem; align-items:flex-start;}
+  .legend-swatch{width:0.7rem; height:0.7rem; border-radius:3px; margin-top:0.3rem; flex:none;}
+  .legend-item .t{font-weight:600; font-size:0.85rem;}
+  .legend-item .d{font-size:0.78rem; color:var(--muted);}
+  .legend-totals{font-size:0.8rem; color:var(--muted); border-top:1px solid var(--line); padding-top:0.7rem; margin-top:0.3rem;}
+  .legend-totals a{color:var(--blue);}
+
+  /* ---- Lead cards (collapsible, native <details>) ---- */
+  .expand-hint{font-size:0.78rem; color:var(--muted); margin:0 0 0.8rem;}
+  .lead-card{margin-bottom:1.1rem; padding:0;}
+  .lead-card > summary{cursor:pointer; list-style:none; padding:1.4rem 1.6rem;}
+  .lead-card > summary::-webkit-details-marker{display:none;}
+  .lead-card > summary::before{content:"▸"; display:inline-block; color:var(--muted); margin-right:0.5rem; transition:transform 0.1s;}
+  .lead-card[open] > summary::before{transform:rotate(90deg);}
+  .lead-card > .lead-card-body{padding:0 1.6rem 1.4rem;}
+  .lead-card .lead-top{display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:0.5rem;}
+  .lead-card .lead-name{font-family:var(--heading-font); font-size:1.08rem; font-weight:600; color:var(--navy);}
+  .lead-card .lead-sub{color:var(--muted); font-size:0.85rem;}
+  .score-bar{display:flex; height:0.6rem; border-radius:5px; overflow:hidden; margin:0.5rem 0 0.3rem; background:var(--bg-soft);}
+  .score-bar span{height:100%;}
+  .score-seg-evidence{background:var(--teal);} .score-seg-icp{background:var(--blue);} .score-seg-whynow{background:var(--purple);}
+  .score-legend{display:flex; gap:1rem; font-size:0.74rem; color:var(--muted); flex-wrap:wrap;}
+  .score-legend i{display:inline-block; width:0.6rem; height:0.6rem; border-radius:2px; margin-right:0.3rem; vertical-align:-1px;}
+  .message-block{border-top:1px solid var(--line); padding-top:0.9rem; margin-top:0.9rem;}
+  .message-block .mhead{display:flex; flex-wrap:wrap; align-items:center; gap:0.5rem; margin-bottom:0.4rem;}
+  .message-block .mhead .chan{font-weight:600; font-size:0.85rem;}
+  .message-block .reason{font-size:0.8rem; color:var(--muted); margin:0.3rem 0 0.6rem;}
+  .message-body{background:var(--bg-soft); border-left:3px solid var(--teal); border-radius:0 8px 8px 0; padding:0.75rem 1rem; font-size:0.88rem; white-space:pre-wrap;}
+  .message-subject{font-weight:600; font-size:0.85rem; margin-bottom:0.3rem;}
+  .evidence-list{margin:0.6rem 0 0; padding:0; list-style:none; font-size:0.78rem;}
+  .evidence-list li{padding:0.2rem 0; border-top:1px dashed var(--line);}
+  .evidence-list li:first-child{border-top:none;}
+
+  /* ---- Tables ---- */
+  table{border-collapse:collapse; width:100%; font-size:0.85rem;}
+  th,td{border-bottom:1px solid var(--line); padding:0.5rem 0.6rem; text-align:left; vertical-align:top;}
+  th{color:var(--muted); font-weight:600; font-size:0.74rem; text-transform:uppercase; letter-spacing:0.03em;}
+  tr:last-child td{border-bottom:none;}
+
+  footer{margin-top:3rem; padding-top:1.2rem; border-top:1px solid var(--line); font-size:0.78rem; color:var(--muted);}
+  footer .disclaimer{margin-top:0.6rem; font-style:italic;}
+
+  @media print{
+    body{background:#fff;}
+    header.brand{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+    .card-shell{box-shadow:none; border:1px solid #ccc;}
+    section{page-break-inside:avoid;}
+    details{display:block;}
+    details > *{display:block;}
+    .lead-card > summary::before{content:"";}
+  }
+</style>
+</head>
+<body>
+
+
+
+<header class="brand">
+  <div class="wrap">
+    <div class="brand-id">
+      <img class="logo" alt="ScyllaDB logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAEACAYAAADFkM5nAABAWElEQVR42u3deXhU1f0/8Pe5d2Yyk5AFwiI7siaETQOETY3VuhYI0LhWq7Uu1bpVW7XV1l83v1Zb69Jata1L6xqBIFbcQUQgBGQNCfsStrCE7MnMnXvP74+ZDIGEzJ0ls4T363l4nmHm3Dvn3EDu557zOecARERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERESxTkS7Ap2MmHrONb0VXZ6lw0iTQlhVw0iBFHYIOCCkBVK4DSFrAEVTJKqlMJyGFFUqrPuWbXzreLQbQEREZwYGAEHIHZeXprmtE4RAtpRiCIQcCKD5T0IIp64BsFcK7BZS7pFS2Qohi221SWuX7H6tKdrtJiKizoMBgAlTxlw9Cob8jhDGBEBMBDAMkb12mgQ2CiFXSYlVwmL55Ju17xyI9nUhIqL4xQCgDbm5uRZXZY/zhRTTATkDwODTlRUJNli6p8PSoyuU7t1g6d4Varc0KA47hNUKkWgHVAWKw+45QErIhiZIzQ3p0mA0NcFoaIJ+tNL75zjcxyqhH6uCdOun+1oJYA2AhYZiLFyxfu7aaF8zIiKKLwwAWpiSdfUEKPodAmIWgK6nfi4cdtgG9YNt8ABYhwxEwuABULt3DeKbTJAGtP0VcO3YC23nXrh2lUPbsw9SN9oqXQ4h/qtCvrJ0Q8GuaF9HIiKKfWd8AJCbld/FreA6A7hdAOee9KEQsJ3dH/ZzR8FxThasA3oDQoleZTU3mrbtgnPtJjR+uwnuimOnljAAfKpAvKSmH/5wyZIl7uhVloiIYtkZGwDkZl/bXdO0hyDFbQBSfBdEEUjIGg7HhDGwnzsaalpKCN/SsbT9FWj6dhMaVn4Lbc/+Uz/eLwSeSm6o+8ei7Yuc0a4rERHFljMu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qwoddCPMzp6e6HAlJyQ3Hm9YtH1R8Iv/tyM3+9ruriZ3P0UxavQuysEVKwoaASA/P189uMUYD6iDIWUyhDioQG5auqFgV6jfSURERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERETUMf4/oDZF4JhgxREAAAAASUVORK5CYII=">
+      <div class="titles">
+        <h1>Scylla Hunter Report</h1>
+        <p>DataStax / Cassandra displacement &middot; GTM pipeline, dry-run</p>
+      </div>
+    </div>
+    <div class="meta">
+      <strong>1</strong> run(s) &middot; <strong>15</strong> LLM calls<br>
+      Models: claude-haiku-5-5, claude-opus-5-5
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section class="card-shell">
+  <h2>Funnel</h2>
+  <div class="funnels">
+    <div>
+      <h3 class="muted" style="font-size:0.78rem; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.6rem;">Account funnel</h3>
+      
+      
+      <div class="funnel-row">
+        <div class="label">gathered</div>
+        <div class="funnel-track"><div class="funnel-fill" style="width:100.0%"></div></div>
+        <div class="count">9</div>
+      </div>
+      
+      <div class="funnel-row">
+        <div class="label">qualified</div>
+        <div class="funnel-track"><div class="funnel-fill" style="width:44.4%"></div></div>
+        <div class="count">4</div>
+      </div>
+      
+      <div class="funnel-row">
+        <div class="label">suppressed</div>
+        <div class="funnel-track"><div class="funnel-fill" style="width:22.2%"></div></div>
+        <div class="count">2</div>
+      </div>
+      
+      <div class="funnel-row">
+        <div class="label">rejected</div>
+        <div class="funnel-track"><div class="funnel-fill" style="width:33.3%"></div></div>
+        <div class="count">3</div>
+      </div>
+      
+    </div>
+    <div>
+      <h3 class="muted" style="font-size:0.78rem; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.6rem;">Lead funnel</h3>
+      
+      
+      <div class="funnel-row">
+        <div class="label">gathered</div>
+        <div class="funnel-track"><div class="funnel-fill" style="width:100.0%"></div></div>
+        <div class="count">13</div>
+      </div>
+      
+      <div class="funnel-row">
+        <div class="label">qualified</div>
+        <div class="funnel-track"><div class="funnel-fill" style="width:38.5%"></div></div>
+        <div class="count">5</div>
+      </div>
+      
+      <div class="funnel-row">
+        <div class="label">drafted</div>
+        <div class="funnel-track"><div class="funnel-fill" style="width:38.5%"></div></div>
+        <div class="count">5</div>
+      </div>
+      
+      <div class="funnel-row">
+        <div class="label">approved</div>
+        <div class="funnel-track"><div class="funnel-fill" style="width:15.4%"></div></div>
+        <div class="count">2</div>
+      </div>
+      
+      <div class="funnel-row">
+        <div class="label">sent</div>
+        <div class="funnel-track"><div class="funnel-fill" style="width:15.4%"></div></div>
+        <div class="count">2</div>
+      </div>
+      
+      <div class="funnel-row">
+        <div class="label">accepted</div>
+        <div class="funnel-track"><div class="funnel-fill" style="width:0.0%"></div></div>
+        <div class="count">0</div>
+      </div>
+      
+      <div class="funnel-row">
+        <div class="label">emailed</div>
+        <div class="funnel-track"><div class="funnel-fill" style="width:0.0%"></div></div>
+        <div class="count">0</div>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+<section class="card-shell">
+  <h2>Engagement</h2>
+  <div class="stat-grid">
+    <div class="stat"><div class="n">0%</div><div class="l">Overall accept rate</div></div>
+    <div class="stat"><div class="n">0</div><div class="l">Warm emails sent</div></div>
+    <div class="stat"><div class="n">0</div><div class="l">Cold emails sent</div></div>
+    
+    
+    <div class="stat"><div class="n">0%</div><div class="l">decision maker accept rate (0/1)</div></div>
+    
+    
+    <div class="stat"><div class="n">0%</div><div class="l">practitioner accept rate (0/1)</div></div>
+    
+  </div>
+</section>
+
+<section class="card-shell">
+  <h2>HITL summary</h2>
+  <div class="stat-grid">
+    <div class="stat"><div class="n">2</div><div class="l">Auto-approved</div></div>
+    <div class="stat"><div class="n">3</div><div class="l">Human-approved</div></div>
+    <div class="stat"><div class="n">0</div><div class="l">Edited</div></div>
+    <div class="stat"><div class="n">0</div><div class="l">Rejected</div></div>
+  </div>
+  <table style="margin-top:1rem;">
+    <tr><th>Route code</th><th>What it means</th><th>Count</th></tr>
+    
+    
+    <tr>
+      <td><strong>Human review: mid score</strong><br><code style="font-size:0.72rem;">score_band</code></td>
+      <td class="muted">Score 60-79</td>
+      <td>3</td>
+    </tr>
+    
+    
+    <tr>
+      <td><strong>Auto-sent</strong><br><code style="font-size:0.72rem;">score_ok</code></td>
+      <td class="muted">Score 80+, all checks passed, nothing sensitive</td>
+      <td>2</td>
+    </tr>
+    
+  </table>
+</section>
+
+<section class="card-shell">
+  <h2>How the account score works</h2>
+  
+  <div class="legend-box">
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:var(--teal)"></div>
+      <div><div class="t">Evidence &middot; max 60</div><div class="d">Top 2 signals, recency decay, confidence</div></div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:var(--blue)"></div>
+      <div><div class="t">ICP &middot; max 25</div><div class="d">Company size band + industry bonus</div></div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:var(--purple)"></div>
+      <div><div class="t">Why now &middot; max 15</div><div class="d">A recent signal shows intent</div></div>
+    </div>
+  </div>
+  <div class="legend-totals">
+    Total max <strong>100</strong> &middot;
+    qualify at <strong>60+</strong> &middot;
+    auto-approve at <strong>80+</strong> &middot;
+    see <a href="PRD.md#9-scoring-model-formulas-weights-and-parameters">PRD §9</a>
+  </div>
+</section>
+
+<section>
+  <h2 style="border:none; margin-bottom:0.3rem;">Leads</h2>
+  <p class="expand-hint">Click a lead to expand it. Printing (&#8984;/Ctrl+P) expands every card automatically.</p>
+  
+  
+  
+  <details class="card-shell lead-card">
+    <summary>
+      <div class="lead-top">
+        <div>
+          <span class="lead-name">Maya Rosen</span>
+          <span class="lead-sub">&middot; VP Engineering &middot; Northwind Payments</span>
+        </div>
+        <div><span class="pill pill-pending">INVITED</span> <strong style="margin-left:0.5rem;">96</strong></div>
+      </div>
+    </summary>
+    <div class="lead-card-body">
+      
+      <div class="score-bar">
+        <span class="score-seg-evidence" style="width:58.2%"></span>
+        <span class="score-seg-icp" style="width:26.1%"></span>
+        <span class="score-seg-whynow" style="width:15.7%"></span>
+      </div>
+      <div class="score-legend">
+        <span><i style="background:var(--teal)"></i>Evidence 55.7</span>
+        <span><i style="background:var(--blue)"></i>ICP 25</span>
+        <span><i style="background:var(--purple)"></i>Why now 15</span>
+        <span>&middot; Account score <strong>96</strong> (QUALIFIED)</span>
+      </div>
+      <p class="muted" style="font-size:0.8rem; margin:0.5rem 0 0;">Account score 96 &gt;= threshold 60 (evidence=55.7, icp=25, why_now=15)</p>
+      <p style="font-size:0.8rem; margin:0.3rem 0 0;"><a href="https://linkedin.example/in/maya-rosen">https://linkedin.example/in/maya-rosen</a></p>
+
+      
+      <div class="message-block">
+        <div class="mhead">
+          <span class="chan">linkedin/invite</span>
+          <span class="pill pill-ok">SENT</span>
+          <span class="muted" style="font-size:0.78rem;">route: auto</span>
+        </div>
+        <p class="reason">account score 96 &gt;= auto-approve threshold 80</p>
+        
+        <div class="message-body">Hi Maya, I came across how Northwind Payments runs fraud scoring with low-latency reads across three regions. I&#39;m Oz, GTM Engineer at ScyllaDB, and I&#39;d like to connect with leaders working on multi-region data layers.</div>
+        
+        <ul class="evidence-list">
+          
+          <li><code>s01</code> customer_reference (high, 2025-11-12) &middot; <a href="https://competitor.example/customers/northwind-payments">https://competitor.example/customers/northwind-payments</a></li>
+          
+        </ul>
+        
+      </div>
+      
+    </div>
+  </details>
+  
+  
+  
+  <details class="card-shell lead-card">
+    <summary>
+      <div class="lead-top">
+        <div>
+          <span class="lead-name">Tom Hale</span>
+          <span class="lead-sub">&middot; Staff SRE &middot; Northwind Payments</span>
+        </div>
+        <div><span class="pill pill-pending">INVITED</span> <strong style="margin-left:0.5rem;">96</strong></div>
+      </div>
+    </summary>
+    <div class="lead-card-body">
+      
+      <div class="score-bar">
+        <span class="score-seg-evidence" style="width:58.2%"></span>
+        <span class="score-seg-icp" style="width:26.1%"></span>
+        <span class="score-seg-whynow" style="width:15.7%"></span>
+      </div>
+      <div class="score-legend">
+        <span><i style="background:var(--teal)"></i>Evidence 55.7</span>
+        <span><i style="background:var(--blue)"></i>ICP 25</span>
+        <span><i style="background:var(--purple)"></i>Why now 15</span>
+        <span>&middot; Account score <strong>96</strong> (QUALIFIED)</span>
+      </div>
+      <p class="muted" style="font-size:0.8rem; margin:0.5rem 0 0;">Account score 96 &gt;= threshold 60 (evidence=55.7, icp=25, why_now=15)</p>
+      <p style="font-size:0.8rem; margin:0.3rem 0 0;"><a href="https://linkedin.example/in/tom-hale">https://linkedin.example/in/tom-hale</a></p>
+
+      
+      <div class="message-block">
+        <div class="mhead">
+          <span class="chan">linkedin/invite</span>
+          <span class="pill pill-ok">SENT</span>
+          <span class="muted" style="font-size:0.78rem;">route: auto</span>
+        </div>
+        <p class="reason">account score 96 &gt;= auto-approve threshold 80</p>
+        
+        <div class="message-body">Hi Tom, I saw the Northwind Payments team is focusing on capacity planning and cost and latency improvements for its multi-region data layer. I&#39;m a GTM Engineer at ScyllaDB and would like to connect with SREs working on that kind of problem.</div>
+        
+        <ul class="evidence-list">
+          
+          <li><code>s02</code> job_post (high, 2026-09-20) &middot; <a href="https://jobs.example/northwind/staff-sre-data">https://jobs.example/northwind/staff-sre-data</a></li>
+          
+        </ul>
+        
+      </div>
+      
+    </div>
+  </details>
+  
+  
+  
+  <details class="card-shell lead-card">
+    <summary>
+      <div class="lead-top">
+        <div>
+          <span class="lead-name">Joris de Vries</span>
+          <span class="lead-sub">&middot; Head of Platform &middot; Lumen Logistics</span>
+        </div>
+        <div><span class="pill pill-ok">QUALIFIED</span> <strong style="margin-left:0.5rem;">76</strong></div>
+      </div>
+    </summary>
+    <div class="lead-card-body">
+      
+      <div class="score-bar">
+        <span class="score-seg-evidence" style="width:54.1%"></span>
+        <span class="score-seg-icp" style="width:26.2%"></span>
+        <span class="score-seg-whynow" style="width:19.7%"></span>
+      </div>
+      <div class="score-legend">
+        <span><i style="background:var(--teal)"></i>Evidence 41.3</span>
+        <span><i style="background:var(--blue)"></i>ICP 20</span>
+        <span><i style="background:var(--purple)"></i>Why now 15</span>
+        <span>&middot; Account score <strong>76</strong> (QUALIFIED)</span>
+      </div>
+      <p class="muted" style="font-size:0.8rem; margin:0.5rem 0 0;">Account score 76 &gt;= threshold 60 (evidence=41.3, icp=20, why_now=15)</p>
+      <p style="font-size:0.8rem; margin:0.3rem 0 0;"><a href="https://linkedin.example/in/joris-devries">https://linkedin.example/in/joris-devries</a></p>
+
+      
+      <div class="message-block">
+        <div class="mhead">
+          <span class="chan">linkedin/invite</span>
+          <span class="pill pill-pending">PENDING_APPROVAL</span>
+          <span class="muted" style="font-size:0.78rem;">route: human</span>
+        </div>
+        <p class="reason">account score 76 is below the auto-approve threshold of 80</p>
+        
+        <div class="message-body">Hi Joris - I saw that Lumen Logistics&#39; shipment-tracking service writes 2B events/day, and that your team is focused on modernising that cluster to reduce operational toil. I&#39;m Oz, GTM Engineer at ScyllaDB - would be glad to connect.</div>
+        
+        <ul class="evidence-list">
+          
+          <li><code>s03</code> job_post (high, 2026-08-05) &middot; <a href="https://jobs.example/lumen/platform-engineer">https://jobs.example/lumen/platform-engineer</a></li>
+          
+        </ul>
+        
+      </div>
+      
+    </div>
+  </details>
+  
+  
+  
+  <details class="card-shell lead-card">
+    <summary>
+      <div class="lead-top">
+        <div>
+          <span class="lead-name">Lior Ben-David</span>
+          <span class="lead-sub">&middot; Principal Engineer &middot; Kestrel Games</span>
+        </div>
+        <div><span class="pill pill-ok">QUALIFIED</span> <strong style="margin-left:0.5rem;">78</strong></div>
+      </div>
+    </summary>
+    <div class="lead-card-body">
+      
+      <div class="score-bar">
+        <span class="score-seg-evidence" style="width:55.3%"></span>
+        <span class="score-seg-icp" style="width:25.5%"></span>
+        <span class="score-seg-whynow" style="width:19.1%"></span>
+      </div>
+      <div class="score-legend">
+        <span><i style="background:var(--teal)"></i>Evidence 43.3</span>
+        <span><i style="background:var(--blue)"></i>ICP 20</span>
+        <span><i style="background:var(--purple)"></i>Why now 15</span>
+        <span>&middot; Account score <strong>78</strong> (QUALIFIED)</span>
+      </div>
+      <p class="muted" style="font-size:0.8rem; margin:0.5rem 0 0;">Account score 78 &gt;= threshold 60 (evidence=43.3, icp=20, why_now=15)</p>
+      <p style="font-size:0.8rem; margin:0.3rem 0 0;"><a href="https://linkedin.example/in/lior-ben-david">https://linkedin.example/in/lior-ben-david</a></p>
+
+      
+      <div class="message-block">
+        <div class="mhead">
+          <span class="chan">linkedin/invite</span>
+          <span class="pill pill-pending">PENDING_APPROVAL</span>
+          <span class="muted" style="font-size:0.78rem;">route: human</span>
+        </div>
+        <p class="reason">account score 78 is below the auto-approve threshold of 80</p>
+        
+        <div class="message-body">Hi Lior, I came across your talk on running a 60-node self-managed Cassandra cluster for the Kestrel Games leaderboards, especially the tail latency and GC/compaction tuning side. I&#39;m Oz, GTM Engineer at ScyllaDB. Would be glad to connect.</div>
+        
+        <ul class="evidence-list">
+          
+          <li><code>s06</code> conference_talk (high, 2026-05-14) &middot; <a href="https://conf.example/2026/talks/kestrel-leaderboards">https://conf.example/2026/talks/kestrel-leaderboards</a></li>
+          
+        </ul>
+        
+      </div>
+      
+    </div>
+  </details>
+  
+  
+  
+  <details class="card-shell lead-card">
+    <summary>
+      <div class="lead-top">
+        <div>
+          <span class="lead-name">Dana Weiss</span>
+          <span class="lead-sub">&middot; Head of Infrastructure &middot; Brightwave AI</span>
+        </div>
+        <div><span class="pill pill-ok">QUALIFIED</span> <strong style="margin-left:0.5rem;">61</strong></div>
+      </div>
+    </summary>
+    <div class="lead-card-body">
+      
+      <div class="score-bar">
+        <span class="score-seg-evidence" style="width:50.7%"></span>
+        <span class="score-seg-icp" style="width:24.6%"></span>
+        <span class="score-seg-whynow" style="width:24.6%"></span>
+      </div>
+      <div class="score-legend">
+        <span><i style="background:var(--teal)"></i>Evidence 30.9</span>
+        <span><i style="background:var(--blue)"></i>ICP 15</span>
+        <span><i style="background:var(--purple)"></i>Why now 15</span>
+        <span>&middot; Account score <strong>61</strong> (QUALIFIED)</span>
+      </div>
+      <p class="muted" style="font-size:0.8rem; margin:0.5rem 0 0;">Account score 61 &gt;= threshold 60 (evidence=30.9, icp=15, why_now=15)</p>
+      <p style="font-size:0.8rem; margin:0.3rem 0 0;"><a href="https://linkedin.example/in/dana-weiss">https://linkedin.example/in/dana-weiss</a></p>
+
+      
+      <div class="message-block">
+        <div class="mhead">
+          <span class="chan">linkedin/invite</span>
+          <span class="pill pill-pending">PENDING_APPROVAL</span>
+          <span class="muted" style="font-size:0.78rem;">route: human</span>
+        </div>
+        <p class="reason">account score 61 is below the auto-approve threshold of 80</p>
+        
+        <div class="message-body">Hi Dana, congrats on joining Brightwave AI as Head of Infrastructure. Your earlier work on the fraud scoring data layer at Northwind Payments caught my eye. I&#39;m Oz, GTM Engineer at ScyllaDB, and I&#39;d be glad to connect with you here.</div>
+        
+        <ul class="evidence-list">
+          
+          <li><code>champ_p12_a01</code> champion_move (high, 2026-07-01) &middot; <a href="https://competitor.example/customers/northwind-payments">https://competitor.example/customers/northwind-payments</a></li>
+          
+        </ul>
+        
+      </div>
+      
+    </div>
+  </details>
+  
+</section>
+
+
+<section class="card-shell">
+  <h2>Sequence timeline</h2>
+  <table>
+    <tr><th>Lead</th><th>Invite sent</th><th>Accepted</th><th>Next action</th><th>Due</th><th>Days remaining</th><th>Status</th></tr>
+    
+    
+    <tr>
+      <td>Maya Rosen</td>
+      <td>2026-10-08</td>
+      <td>-</td>
+      <td>Cold email due at day 7</td>
+      <td>2026-10-15</td>
+      <td>7</td>
+      <td>Pending</td>
+    </tr>
+    
+    
+    <tr>
+      <td>Tom Hale</td>
+      <td>2026-10-08</td>
+      <td>-</td>
+      <td>Cold email due at day 7</td>
+      <td>2026-10-15</td>
+      <td>7</td>
+      <td>Pending</td>
+    </tr>
+    
+  </table>
+</section>
+
+
+
+
+<section class="card-shell">
+  <h2>All accounts</h2>
+  <table>
+    <tr><th>Account</th><th>Score</th><th>Status</th><th>Reason</th></tr>
+    
+    <tr><td>Northwind Payments</td><td>96</td><td><span class="pill pill-ok">QUALIFIED</span></td><td class="muted">Account score 96 &gt;= threshold 60 (evidence=55.7, icp=25, why_now=15)</td></tr>
+    
+    <tr><td>Lumen Logistics</td><td>76</td><td><span class="pill pill-ok">QUALIFIED</span></td><td class="muted">Account score 76 &gt;= threshold 60 (evidence=41.3, icp=20, why_now=15)</td></tr>
+    
+    <tr><td>Orbit Media</td><td>23</td><td><span class="pill pill-bad">REJECTED</span></td><td class="muted">Account score 23 below threshold 60</td></tr>
+    
+    <tr><td>Kestrel Games</td><td>78</td><td><span class="pill pill-ok">QUALIFIED</span></td><td class="muted">Account score 78 &gt;= threshold 60 (evidence=43.3, icp=20, why_now=15)</td></tr>
+    
+    <tr><td>Pinecrest Analytics</td><td>0</td><td><span class="pill pill-bad">REJECTED</span></td><td class="muted">Gate: no technology evidence</td></tr>
+    
+    <tr><td>Quanta Retail</td><td>0</td><td><span class="pill pill-off">SUPPRESSED</span></td><td class="muted">Existing ScyllaDB customer domain</td></tr>
+    
+    <tr><td>DataStax</td><td>0</td><td><span class="pill pill-off">SUPPRESSED</span></td><td class="muted">Competitor domain</td></tr>
+    
+    <tr><td>Brightwave AI</td><td>61</td><td><span class="pill pill-ok">QUALIFIED</span></td><td class="muted">Account score 61 &gt;= threshold 60 (evidence=30.9, icp=15, why_now=15)</td></tr>
+    
+    <tr><td>Sprocket Labs</td><td>0</td><td><span class="pill pill-bad">REJECTED</span></td><td class="muted">Gate: 12 employees, below ICP min_employees=100</td></tr>
+    
+  </table>
+</section>
+
+<section class="card-shell">
+  <h2>All leads</h2>
+  <table>
+    <tr><th>Lead</th><th>Title</th><th>LinkedIn</th><th>Company</th><th>Persona</th><th>Status</th><th>Reason</th></tr>
+    
+    
+    <tr>
+      <td>Maya Rosen</td>
+      <td>VP Engineering</td>
+      <td><a href="https://linkedin.example/in/maya-rosen">profile</a></td>
+      <td>Northwind Payments</td>
+      <td>decision_maker</td>
+      <td><span class="pill pill-pending">INVITED</span></td>
+      <td class="muted">invite linkedin dispatched (dry-run)</td>
+    </tr>
+    
+    
+    <tr>
+      <td>Tom Hale</td>
+      <td>Staff SRE</td>
+      <td><a href="https://linkedin.example/in/tom-hale">profile</a></td>
+      <td>Northwind Payments</td>
+      <td>practitioner</td>
+      <td><span class="pill pill-pending">INVITED</span></td>
+      <td class="muted">invite linkedin dispatched (dry-run)</td>
+    </tr>
+    
+    
+    <tr>
+      <td>Ana Costa</td>
+      <td>Senior Data Engineer</td>
+      <td><a href="https://linkedin.example/in/ana-costa">profile</a></td>
+      <td>Northwind Payments</td>
+      <td>practitioner</td>
+      <td><span class="pill pill-off">DEPRIORITIZED</span></td>
+      <td class="muted">Qualified but rank 3 exceeds the remaining cap (2/2 slots open - 0 already contacted)</td>
+    </tr>
+    
+    
+    <tr>
+      <td>Ruth Green</td>
+      <td>HR Director</td>
+      <td><a href="https://linkedin.example/in/ruth-green">profile</a></td>
+      <td>Northwind Payments</td>
+      <td>-</td>
+      <td><span class="pill pill-bad">REJECTED</span></td>
+      <td class="muted">Gate: excluded department (HR)</td>
+    </tr>
+    
+    
+    <tr>
+      <td>Joris de Vries</td>
+      <td>Head of Platform</td>
+      <td><a href="https://linkedin.example/in/joris-devries">profile</a></td>
+      <td>Lumen Logistics</td>
+      <td>decision_maker</td>
+      <td><span class="pill pill-ok">QUALIFIED</span></td>
+      <td class="muted">Selected: rank 1 at a qualified account (score 76)</td>
+    </tr>
+    
+    
+    <tr>
+      <td>Rita Okafor</td>
+      <td>SRE</td>
+      <td><a href="https://linkedin.example/in/rita-okafor">profile</a></td>
+      <td>Lumen Logistics</td>
+      <td>-</td>
+      <td><span class="pill pill-off">SUPPRESSED</span></td>
+      <td class="muted">Email is on the opt-out list</td>
+    </tr>
+    
+    
+    <tr>
+      <td>Jason Park</td>
+      <td>Director of Engineering</td>
+      <td><a href="https://linkedin.example/in/jason-park">profile</a></td>
+      <td>Orbit Media</td>
+      <td>-</td>
+      <td><span class="pill pill-bad">REJECTED</span></td>
+      <td class="muted">Account not qualified: Account score 23 below threshold 60</td>
+    </tr>
+    
+    
+    <tr>
+      <td>Lior Ben-David</td>
+      <td>Principal Engineer</td>
+      <td><a href="https://linkedin.example/in/lior-ben-david">profile</a></td>
+      <td>Kestrel Games</td>
+      <td>practitioner</td>
+      <td><span class="pill pill-ok">QUALIFIED</span></td>
+      <td class="muted">Selected: rank 1 at a qualified account (score 78)</td>
+    </tr>
+    
+    
+    <tr>
+      <td>Cassandra Lee</td>
+      <td>Head of Data</td>
+      <td><a href="https://linkedin.example/in/cassandra-lee">profile</a></td>
+      <td>Pinecrest Analytics</td>
+      <td>-</td>
+      <td><span class="pill pill-bad">REJECTED</span></td>
+      <td class="muted">Account not qualified: Gate: no technology evidence</td>
+    </tr>
+    
+    
+    <tr>
+      <td>Felix Braun</td>
+      <td>VP Engineering</td>
+      <td><a href="https://linkedin.example/in/felix-braun">profile</a></td>
+      <td>Quanta Retail</td>
+      <td>-</td>
+      <td><span class="pill pill-off">SUPPRESSED</span></td>
+      <td class="muted">Account suppressed: Existing ScyllaDB customer domain</td>
+    </tr>
+    
+    
+    <tr>
+      <td>Priya Nair</td>
+      <td>Solutions Architect</td>
+      <td><a href="https://linkedin.example/in/priya-nair">profile</a></td>
+      <td>DataStax</td>
+      <td>-</td>
+      <td><span class="pill pill-off">SUPPRESSED</span></td>
+      <td class="muted">Account suppressed: Competitor domain</td>
+    </tr>
+    
+    
+    <tr>
+      <td>Dana Weiss</td>
+      <td>Head of Infrastructure</td>
+      <td><a href="https://linkedin.example/in/dana-weiss">profile</a></td>
+      <td>Brightwave AI</td>
+      <td>decision_maker</td>
+      <td><span class="pill pill-ok">QUALIFIED</span></td>
+      <td class="muted">Selected: rank 1 at a qualified account (score 61)</td>
+    </tr>
+    
+    
+    <tr>
+      <td>Nuno Alves</td>
+      <td>CTO</td>
+      <td><a href="https://linkedin.example/in/nuno-alves">profile</a></td>
+      <td>Sprocket Labs</td>
+      <td>-</td>
+      <td><span class="pill pill-bad">REJECTED</span></td>
+      <td class="muted">Account not qualified: Gate: 12 employees, below ICP min_employees=100</td>
+    </tr>
+    
+  </table>
+</section>
+
+<footer>
+  <div>
+    Runs: 1 &middot;
+    LLM calls: 15 (22746 in / 3496 out tokens)<br>
+    Prompt cache: 0 tokens read from cache, 0 tokens written to cache (live mode only - 0/0 in replay mode)<br>
+    Models: claude-haiku-5-5, claude-opus-5-5 &middot;
+    Prompt versions: extract_signals.v4, personalize.v9
+  </div>
+  <div class="disclaimer">Prototype built for the ScyllaDB GTM Engineer home assignment - not an official ScyllaDB product.</div>
+</footer>
+
+</div>
+</body>
+</html>

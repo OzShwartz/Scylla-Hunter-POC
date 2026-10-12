@@ -36,6 +36,7 @@ This file is long - load the section you need rather than the whole file. The Hi
 | 24 | 10-12 | AUDIT.md follow-through: the four deferred items, resolved |
 | 25 | 10-12 | Pre-submit cleanup: stale n8n doc claims, a real sent_at bug |
 | 26 | 10-12 | Steps 1-5: externally-fixed diagrams, PRD sync, branded report.html |
+| 27 | 10-12 | Report polish: Title/LinkedIn, score legend, route labels, sequence timeline, README assumptions |
 
 ## Highlights: where human review caught what the automated checks missed
 
@@ -597,3 +598,22 @@ While staging the Phase 0 scaffold commit, `git status` showed `.env.example` (t
 **Result:** `pytest -q`: 159/159. `hunter eval`: 100%. `examples/report.md` byte-identical to the prior commit; `examples/report.html` regenerated, self-contained, ~55KB.
 
 **Decisions made by the human:** none required for 1-4. For 5, the font choice and exact pill semantics (which statuses read as "pending" amber vs "off" gray) were judgment calls within the brief, not strict derivations from the screenshot - flagged as such rather than presented as certain.
+
+---
+
+## Entry #27 — 2026-10-12 — Report polish: Title/LinkedIn columns, score legend, route labels, sequence timeline, README assumptions
+
+**Prompt (summarized), after Oz reviewed the published report.html artifact and asked for opinions on 5 UI gaps:** add Title/LinkedIn columns to the leads table (both formats); make lead cards collapsible (native `<details>`, no JS); a score-legend box built from config, not hardcoded; human-readable route-code labels; a new "Sequence timeline" section (dates from `as_of` + simulated days, never wall-clock, meaningful mid-run - add `examples/report_after_run.html` as that snapshot); a README "Assumptions" table. Update tests, regenerate, push.
+
+**What Claude did:**
+- Found and fixed a real bug while building the timeline: the first version read a lead's "accepted" day straight from `fixtures.simulated_events` - the *scripted plan* - regardless of whether that event had actually happened yet. In the mid-run snapshot (right after `hunter run`, before `simulate`), this made Maya look like she'd already accepted when nothing had been simulated for her at all. Fixed by cross-referencing against `db.list_events` for an actual `connection_accepted` row first - verified both states by hand (mid-run: "Accepted: -", "Pending", 7 days remaining; after `simulate --days 7`: real dates, 0 remaining).
+- `build_score_legend`/`build_route_code_info`/`build_sequence_timeline` (new, in `report.py`) pull every number from `config` (`icp.employee_bands`, `signals.max_evidence_points`, `signals.why_now.bonus`, `scoring.account_threshold`, `hitl.auto_send_min_account_score`) - none hardcoded, confirmed by reading the Pydantic field names directly rather than guessing them.
+- Lead cards: `<div class="lead-card">` became `<details class="lead-card"><summary>...</summary>...` - zero JS, collapsed by default, `@media print { details, details > * { display:block } }` to expand everything on print (the standard pattern for this; confirmed by reasoning through the CSS/UA-stylesheet interaction, not assumed).
+- The "## Sequence timeline" section in `render_markdown` first landed *between* "## Leads" and "## Sent messages," which broke the pre-existing counts-equal-DB test (it slices markdown between those two headers and counts table rows - now counting two tables as one). Moved it to after "## Sent messages" instead of patching around the test, since that's also the more sensible narrative position.
+- Caught my own broken anchor before shipping: the score-legend's "see PRD §9" link used `PRD.md#9-scoring-model`, but the real heading is "9. Scoring model: formulas, weights and parameters" - GitHub's slugifier keeps the whole heading, not just the number. Checked the actual heading text and fixed the href rather than assuming the short slug was right.
+- Added three tests: the counts-equal-DB test now also asserts the Sequence timeline's row count equals the number of SENT invites; the existing lead/logo test now also asserts every lead's LinkedIn URL appears as a real `href`; a new test calls `build_sequence_timeline` twice and asserts byte-identical output (proving no `datetime.now()` anywhere in it), plus checks every row's dates against `config.as_of + timedelta(...)` by hand.
+- README: added an "Assumptions" table (confidence + "if wrong" per PRD §21.1's A1-A6, in the reviewer's own words rather than a "see PRD" pointer) above "Key decisions," plus fixed a second stale test count ("157" - already 159) sitting right above it.
+
+**Result:** `pytest -q`: 160/160. `hunter eval`: 100%. `examples/report.html` (final state) and the new `examples/report_after_run.html` (mid-run, real countdown) both regenerated and HTML-validated (tag-balanced, no unrendered Jinja).
+
+**Decisions made by the human:** confidence ratings and "if wrong" impact in the README's assumptions table are Claude's own judgment calls, not independently verified against anything - flagged as such in the table's own framing ("These are the commercial assumptions I'd confirm with the hiring team").

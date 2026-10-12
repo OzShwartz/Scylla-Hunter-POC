@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 
@@ -134,6 +134,10 @@ def test_markdown_table_row_counts_match_db_counts(full_funnel_conn):
     sent_section = markdown.split("## Sent messages")[1].split("## Run metadata")[0]
     assert sent_section.count("### msg#") == len(db.list_messages(conn, status="SENT"))
 
+    timeline_section = markdown.split("## Sequence timeline")[1].split("## Run metadata")[0]
+    sent_invites = sum(1 for m in db.list_messages(conn, status="SENT") if m["variant"] == "invite")
+    assert _table_row_count(timeline_section) == sent_invites == len(data.sequence_timeline)
+
 
 def test_hitl_summary_route_counts_sum_to_all_messages(full_funnel_conn):
     conn, test_config = full_funnel_conn
@@ -174,4 +178,24 @@ def test_html_report_contains_every_lead_and_the_logo(full_funnel_conn):
 
     for lead in db.list_leads(conn):
         assert f"{lead['first_name']} {lead['last_name']}" in html_text
+        if lead["linkedin_url"]:
+            assert f'href="{lead["linkedin_url"]}"' in html_text
     assert 'src="data:image/png;base64,' in html_text
+
+
+def test_sequence_timeline_dates_come_from_as_of_not_wall_clock(full_funnel_conn):
+    conn, test_config = full_funnel_conn
+
+    first = report.build_sequence_timeline(conn, test_config)
+    second = report.build_sequence_timeline(conn, test_config)
+    assert first == second  # same conn and config in, same output out - no datetime.now() anywhere
+
+    r3_days = next(r.days for r in test_config.sequence if r.id == "R3")
+    for row in first:
+        assert row["invite_sent"] == test_config.as_of
+        if row["accepted"] is None:
+            # never accepted -> R3 fired the cold email at exactly r3_days
+            assert row["due_date"] == test_config.as_of + timedelta(days=r3_days)
+        else:
+            assert row["due_date"] == row["accepted"]
+        assert row["days_remaining"] == 0  # full_funnel_conn runs the demo to completion
