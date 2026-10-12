@@ -15,9 +15,9 @@ runtime:
   dry_run: true                  # never really send; write to console + outbox.jsonl
   approval_mode: threshold       # all | threshold | off   (see hitl)
   db_path: "hunter.db"
-  outbox_path: "examples/outbox.jsonl"
-  report_path: "examples/report.md"
-  report_html_path: "examples/report.html"
+  outbox_path: "out/outbox.jsonl"       # git-ignored; see scripts/regenerate_examples.sh for the committed examples/ snapshot
+  report_path: "out/report.md"
+  report_html_path: "out/report.html"
 
 llm:
   mode: replay                   # replay (default, no key) | live (needs ANTHROPIC_API_KEY)

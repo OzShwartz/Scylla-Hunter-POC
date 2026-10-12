@@ -13,15 +13,18 @@ pip install -r requirements.txt
 python -m hunter reset
 python -m hunter run                 # 5 qualified leads; 2 invites auto-sent, 3 pending
 python -m hunter review              # see pending drafts with evidence and routing reason
-python -m hunter approve --all       # approves the score-band ones; skips anything content-sensitive
+python -m hunter edit 5 --text "..." # FR-7: edit a pending draft; validators re-run, then it's approved
+python -m hunter approve --all       # approves the remaining score-band ones; skips anything content-sensitive
 python -m hunter simulate --days 7   # 2 accept -> warm email; 3 don't -> cold email
 python -m hunter review              # msg#6, #9, #10 are tagged [SENSITIVE CONTENT]
 python -m hunter approve --all       # skips #6/#9/#10 again, with their ids
 python -m hunter approve 6 && python -m hunter approve 9 && python -m hunter approve 10
-python -m hunter report --html       # examples/report.md and examples/report.html
+python -m hunter report --html       # out/report.md and out/report.html
 ```
 
 These message ids are deterministic - replay mode makes the same drafts every time, in the same order. Everything above runs against a committed **replay set** (`data/llm_replay/`): real Claude responses recorded once, replayed deterministically. `--llm live` plus `ANTHROPIC_API_KEY` in `.env` re-records them; the reviewer never needs a key.
+
+Output (`outbox.jsonl`, `report.md`, `report.html`) is written to the git-ignored `out/` directory by default - running the quickstart never modifies the repo. The committed snapshot under `examples/`, quoted throughout this README, is regenerated deliberately from this same command sequence only by `scripts/regenerate_examples.sh`.
 
 ## The problem, and how I read it
 

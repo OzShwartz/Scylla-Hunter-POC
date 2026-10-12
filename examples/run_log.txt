@@ -1,4 +1,6 @@
+$ python -m hunter reset
 Database reset: hunter.db
+$ python -m hunter run
 Loaded 9 accounts, 10 raw signals, 13 people.
 Extraction: 10 LLM calls (mode=replay), 20089/1319 tokens in/out.
 Champion-move signals derived: 1 (champ_p12_a01)
@@ -43,6 +45,7 @@ Drafted messages: 5
   msg#3 lead=p05 linkedin/invite route=human status=PENDING_APPROVAL
   msg#4 lead=p08 linkedin/invite route=human status=PENDING_APPROVAL
   msg#5 lead=p12 linkedin/invite route=human status=PENDING_APPROVAL
+$ python -m hunter review
 
 msg#3 | linkedin/invite | lead=p05 Joris de Vries (decision_maker) @ Lumen Logistics (score 76)
   reason: account score 76 is below the auto-approve threshold of 80
@@ -61,7 +64,17 @@ msg#5 | linkedin/invite | lead=p12 Dana Weiss (decision_maker) @ Brightwave AI (
   body: Hi Dana, congrats on joining Brightwave AI. I came across your past work on the fraud scoring setup at Northwind Payments and the data layer behind it. I'm Oz, GTM Engineer at ScyllaDB, and I'd be glad to connect with someone who has run that kind of workload.
   evidence:
     champ_p12_a01 | champion_move | 2026-07-01 | high | "Northwind Payments runs fraud scoring on Astra DB."
-Approved 3 draft(s).
+$ python -m hunter edit 5 --text Hi\ Dana\,\ congrats\ on\ the\ move\ to\ Brightwave\ AI\ -\ I\ came\ across\ your\ previous\ work\ on\ fraud-scoring\ infrastructure\ and\ would\ be\ glad\ to\ connect.
+Edited msg#5: validators pass, approved.
+┌───────────────────────────────────────────────────────────────────────
+│ [DRY RUN] would send - linkedin/invite
+│ to:      Dana Weiss @ Brightwave AI <https://linkedin.example/in/dana-weiss>
+│ route:   human
+│ text:
+│   Hi Dana, congrats on the move to Brightwave AI - I came across your previous work on fraud-scoring infrastructure and would be glad to connect.
+└───────────────────────────────────────────────────────────────────────
+$ python -m hunter approve --all
+Approved 2 draft(s).
 ┌───────────────────────────────────────────────────────────────────────
 │ [DRY RUN] would send - linkedin/invite
 │ to:      Joris de Vries @ Lumen Logistics <https://linkedin.example/in/joris-devries>
@@ -76,13 +89,7 @@ Approved 3 draft(s).
 │ text:
 │   Hi Lior, I came across your talk on running Kestrel Games' leaderboard on 60 self-managed Cassandra nodes, especially the tail latency and GC/compaction tuning side. I'm Oz, GTM Engineer at ScyllaDB, and would like to connect.
 └───────────────────────────────────────────────────────────────────────
-┌───────────────────────────────────────────────────────────────────────
-│ [DRY RUN] would send - linkedin/invite
-│ to:      Dana Weiss @ Brightwave AI <https://linkedin.example/in/dana-weiss>
-│ route:   human
-│ text:
-│   Hi Dana, congrats on joining Brightwave AI. I came across your past work on the fraud scoring setup at Northwind Payments and the data layer behind it. I'm Oz, GTM Engineer at ScyllaDB, and I'd be glad to connect with someone who has run that kind of workload.
-└───────────────────────────────────────────────────────────────────────
+$ python -m hunter simulate --days 7
 Simulated to day 7.
 Warm emails drafted (connection accepted): p01, p08
 Cold emails drafted (no accept by day 7): p02, p05, p12
@@ -107,6 +114,7 @@ Cold emails drafted (no accept by day 7): p02, p05, p12
 └───────────────────────────────────────────────────────────────────────
 
 1 message(s) dispatched (dry-run) - see outbox.jsonl
+$ python -m hunter review
 
 msg#6 | email/warm | lead=p01 Maya Rosen (decision_maker) @ Northwind Payments (score 96)  [SENSITIVE CONTENT - excluded from `approve --all`]
   reason: forced: mentions a competitor product, the IBM/DataStax acquisition, or a renewal/contract - overrides account score and approval_mode (PRD §9.6)
@@ -179,6 +187,7 @@ GTM Engineer, ScyllaDB
 Reply STOP to opt out.
   evidence:
     champ_p12_a01 | champion_move | 2026-07-01 | high | "Northwind Payments runs fraud scoring on Astra DB."
+$ python -m hunter approve --all
 Approved 1 draft(s).
   Skipped msg#6: forced: mentions a competitor product, the IBM/DataStax acquisition, or a renewal/contract - overrides account score and approval_mode (PRD §9.6) - approve individually with `hunter approve 6`
   Skipped msg#9: forced: mentions a competitor product, the IBM/DataStax acquisition, or a renewal/contract - overrides account score and approval_mode (PRD §9.6) - approve individually with `hunter approve 9`
@@ -202,6 +211,7 @@ Approved 1 draft(s).
 │   
 │   Reply STOP to opt out.
 └───────────────────────────────────────────────────────────────────────
+$ python -m hunter approve 6
 Approved msg#6.
 ┌───────────────────────────────────────────────────────────────────────
 │ [DRY RUN] would send - email/warm
@@ -222,6 +232,7 @@ Approved msg#6.
 │   
 │   Reply STOP to opt out.
 └───────────────────────────────────────────────────────────────────────
+$ python -m hunter approve 9
 Approved msg#9.
 ┌───────────────────────────────────────────────────────────────────────
 │ [DRY RUN] would send - email/cold
@@ -242,6 +253,7 @@ Approved msg#9.
 │   
 │   Reply STOP to opt out.
 └───────────────────────────────────────────────────────────────────────
+$ python -m hunter approve 10
 Approved msg#10.
 ┌───────────────────────────────────────────────────────────────────────
 │ [DRY RUN] would send - email/cold
@@ -262,5 +274,6 @@ Approved msg#10.
 │   
 │   Reply STOP to opt out.
 └───────────────────────────────────────────────────────────────────────
-Wrote examples/report.md
-Wrote examples/report.html
+$ python -m hunter report --html
+Wrote out/report.md
+Wrote out/report.html

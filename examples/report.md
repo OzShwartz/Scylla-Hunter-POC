@@ -34,7 +34,7 @@
 ## HITL summary
 
 - Auto-approved: 3 · Human-approved: 7
-- Edited: 0 · Rejected: 0
+- Edited: 1 · Rejected: 0
 
 | Route code | Count |
 |---|---|

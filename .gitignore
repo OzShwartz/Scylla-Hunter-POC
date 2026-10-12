@@ -5,6 +5,7 @@
 __pycache__/
 *.pyc
 /hunter.db
+/out/
 .pytest_cache/
 
 # Not part of the repo deliverable (PRD §16.2): keep locally, don't track
