@@ -70,7 +70,7 @@ Real output from `examples/run_log.txt` - nothing in this section is invented.
 
 ## How quality is measured
 
-`hunter eval` scores every run against fixture `_expected` values - never read by the pipeline itself, only by the evaluator: **32/32** extraction fields, **13/13** lead selections, **10/10** grounded messages. **159 automated tests** cover scoring, gates, validators, HITL routing, triggers, dispatch, the report, and the GitHub source. Grounding is enforced in code, not just prompted: every `evidence_quote` must be a verbatim substring of the source text, every cited evidence id must exist and belong to the lead's account, and every named person must actually appear in the source.
+`hunter eval` scores every run against fixture `_expected` values - never read by the pipeline itself, only by the evaluator: **32/32** extraction fields, **13/13** lead selections, **10/10** grounded messages. **161 automated tests** cover scoring, gates, validators, HITL routing, triggers, dispatch, the report, and the GitHub source. Grounding is enforced in code, not just prompted: every `evidence_quote` must be a verbatim substring of the source text, every cited evidence id must exist and belong to the lead's account, and every named person must actually appear in the source.
 
 ## Assumptions
 

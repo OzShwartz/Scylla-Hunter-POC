@@ -28,7 +28,7 @@
   code{background:var(--bg-soft); border:1px solid var(--line); padding:0.08rem 0.35rem; border-radius:4px; font-size:0.85em;}
   .muted{color:var(--muted);}
   section{margin:2rem 0;}
-  .card-shell{background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:1.4rem 1.6rem; box-shadow:0 1px 2px rgba(17,24,71,0.04);}
+  .card-shell{background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:1.4rem 1.6rem; box-shadow:0 1px 2px rgba(17,24,71,0.04); overflow-x:auto;}
 
   /* ---- Header ---- */
   header.brand{background:linear-gradient(135deg, var(--navy-deep) 0%, var(--blue) 100%); padding:2.2rem 1.5rem 2.6rem;}
@@ -74,9 +74,10 @@
   /* ---- Lead cards (collapsible, native <details>) ---- */
   .expand-hint{font-size:0.78rem; color:var(--muted); margin:0 0 0.8rem;}
   .lead-card{margin-bottom:1.1rem; padding:0;}
-  .lead-card > summary{cursor:pointer; list-style:none; padding:1.4rem 1.6rem;}
+  .lead-card > summary{cursor:pointer; list-style:none; padding:1.4rem 1.6rem; display:flex; align-items:center; gap:0.5rem;}
   .lead-card > summary::-webkit-details-marker{display:none;}
-  .lead-card > summary::before{content:"▸"; display:inline-block; color:var(--muted); margin-right:0.5rem; transition:transform 0.1s;}
+  .lead-card > summary::before{content:"▸"; display:inline-block; flex:none; color:var(--muted); transition:transform 0.1s;}
+  .lead-card > summary > .lead-top{flex:1; min-width:0;}
   .lead-card[open] > summary::before{transform:rotate(90deg);}
   .lead-card > .lead-card-body{padding:0 1.6rem 1.4rem;}
   .lead-card .lead-top{display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:0.5rem;}
@@ -241,6 +242,7 @@
   <h2>HITL summary</h2>
   <div class="stat-grid">
     <div class="stat"><div class="n">3</div><div class="l">Auto-approved</div></div>
+    <div class="stat"><div class="n">7</div><div class="l">Routed to human</div></div>
     <div class="stat"><div class="n">7</div><div class="l">Human-approved</div></div>
     <div class="stat"><div class="n">1</div><div class="l">Edited</div></div>
     <div class="stat"><div class="n">0</div><div class="l">Rejected</div></div>

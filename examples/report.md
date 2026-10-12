@@ -33,7 +33,7 @@
 
 ## HITL summary
 
-- Auto-approved: 3 · Human-approved: 7
+- Auto-approved: 3 · Routed to human: 7 · Human-approved: 7
 - Edited: 1 · Rejected: 0
 
 | Route code | What it means | Count |

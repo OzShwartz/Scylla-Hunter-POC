@@ -12,6 +12,7 @@ from hunter import personalize as personalize_mod
 from hunter.sources import load_fixtures
 
 REPORT_TEST_DB_PATH = "/tmp/hunter_pytest_report.db"
+POST_RUN_TEST_DB_PATH = "/tmp/hunter_pytest_report_post_run.db"
 
 
 @pytest.fixture
@@ -55,6 +56,36 @@ def full_funnel_conn(config, tmp_path):
     for message, _reason in skipped:
         hitl.approve(conn, message["id"], now=datetime.now())
     dispatch.dispatch_approved(conn, test_config, run_id=None, now=datetime.now())
+
+    yield conn, test_config
+    conn.close()
+
+
+@pytest.fixture
+def post_run_conn(config, tmp_path):
+    """Right after `hunter run`, before any approval: invites drafted and
+    routed (2 auto, 3 human), nothing approved or dispatched yet."""
+    test_config = config.model_copy(deep=True)
+    test_config.runtime.outbox_path = str(tmp_path / "outbox.jsonl")
+
+    db.reset_db(POST_RUN_TEST_DB_PATH)
+    conn = db.connect(POST_RUN_TEST_DB_PATH)
+
+    fixtures = load_fixtures()
+    for a in fixtures.accounts:
+        db.upsert_account(
+            conn, id=a.id, name=a.name, domain=a.domain, industry=a.industry, employees=a.employees, hq=a.hq
+        )
+    for p in fixtures.people:
+        db.upsert_lead(
+            conn, id=p.id, account_id=p.account_id, first_name=p.first_name, last_name=p.last_name,
+            title=p.title, department=p.department, skills=p.skills, linkedin_url=p.linkedin_url, email=p.email,
+        )
+    extract_mod.extract_signals(conn, fixtures, test_config, llm_mode="replay")
+    extract_mod.detect_champion_moves(conn, fixtures)
+    scoring.score_accounts(conn, test_config, test_config.as_of)
+    scoring.select_leads(conn, test_config, datetime.now())
+    personalize_mod.draft_invites_for_qualified_leads(conn, test_config, llm_mode="replay", run_id=None, now=datetime.now())
 
     yield conn, test_config
     conn.close()
@@ -144,6 +175,16 @@ def test_hitl_summary_route_counts_sum_to_all_messages(full_funnel_conn):
     summary = report.compute_hitl_summary(conn, test_config)
     assert sum(summary["by_route"].values()) == len(db.list_messages(conn))
     assert sum(summary["by_code"].values()) == len(db.list_messages(conn))
+
+
+def test_hitl_summary_distinguishes_routed_from_approved(post_run_conn):
+    """Right after `run`, 3 invites are routed to human review but none of
+    them have actually been approved yet - by_route['human'] (routed) and
+    human_approved (approved) must not be conflated."""
+    conn, test_config = post_run_conn
+    summary = report.compute_hitl_summary(conn, test_config)
+    assert summary["by_route"].get("human", 0) == 3
+    assert summary["human_approved"] == 0
 
 
 def test_engagement_accept_rate_by_persona(full_funnel_conn):

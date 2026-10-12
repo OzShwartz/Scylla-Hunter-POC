@@ -109,6 +109,7 @@ def compute_hitl_summary(conn: sqlite3.Connection, config: Config) -> dict:
     by_code: dict[str, int] = {}
     edits = 0
     rejections = 0
+    human_approved = 0
     for m in db.list_messages(conn):
         by_route[m["approval_route"]] = by_route.get(m["approval_route"], 0) + 1
         lead = db.get_lead(conn, m["lead_id"])
@@ -119,7 +120,15 @@ def compute_hitl_summary(conn: sqlite3.Connection, config: Config) -> dict:
             edits += 1
         if m["status"] == "REJECTED":
             rejections += 1
-    return {"by_route": by_route, "by_code": by_code, "edits": edits, "rejections": rejections}
+        # by_route["human"] is how many drafts were ROUTED to human review, not
+        # how many a human has actually approved yet - those are two different
+        # numbers (a draft can sit PENDING_APPROVAL for a while).
+        if m["approval_route"] == "human" and m["status"] in ("APPROVED", "SENT"):
+            human_approved += 1
+    return {
+        "by_route": by_route, "by_code": by_code, "edits": edits, "rejections": rejections,
+        "human_approved": human_approved,
+    }
 
 
 def sent_messages_detail(conn: sqlite3.Connection) -> list[dict]:
@@ -386,7 +395,8 @@ def render_markdown(data: ReportData) -> str:
     lines += ["", "## HITL summary", ""]
     lines.append(
         f"- Auto-approved: {data.hitl_summary['by_route'].get('auto', 0)} · "
-        f"Human-approved: {data.hitl_summary['by_route'].get('human', 0)}"
+        f"Routed to human: {data.hitl_summary['by_route'].get('human', 0)} · "
+        f"Human-approved: {data.hitl_summary['human_approved']}"
     )
     lines.append(f"- Edited: {data.hitl_summary['edits']} · Rejected: {data.hitl_summary['rejections']}")
     lines += ["", "| Route code | What it means | Count |", "|---|---|---|"]
