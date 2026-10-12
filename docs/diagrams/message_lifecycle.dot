@@ -1,12 +1,12 @@
-digraph G { rankdir=LR;   graph [fontname="DejaVu Sans", fontsize=11, bgcolor="white", pad=0.3, nodesep=0.45, ranksep=0.55];
+digraph G { rankdir=LR; graph [fontname="DejaVu Sans", fontsize=11, bgcolor="white", pad=0.3, nodesep=0.45, ranksep=0.55];
   node  [fontname="DejaVu Sans", fontsize=10, color="#3b4a63", fontcolor="#1b2230", penwidth=1.2];
   edge  [fontname="DejaVu Sans", fontsize=9, color="#5b6475", fontcolor="#3b4a63", arrowsize=0.7];
   node [shape=box, style="rounded,filled", fillcolor="#eef2f8"];
   start [shape=circle, label="", width=0.2, fillcolor="#1b2230"]; end [shape=doublecircle, label="", width=0.15, fillcolor="#1b2230"];
   PEND [label="PENDING_APPROVAL", fillcolor="#fff6e0"]; REJ [label="REJECTED", fillcolor="#f6e3e3"]; SENT [label="SENT\n(dry-run)", fillcolor="#e8f4ec"];
   start -> DRAFTED; DRAFTED -> DRAFTED [label="validator failed,\none retry"];
-  DRAFTED -> APPROVED [label="auto: score 80+\nand checks pass"];
-  DRAFTED -> PEND [label="score 60-79\nor forced review"];
-  PEND -> APPROVED [label="approve / edit"]; PEND -> REJ [label="reject + reason"];
+  DRAFTED -> APPROVED [label="auto: score 80+,\nall checks pass,\nno sensitive content"];
+  DRAFTED -> PEND [label="score 60-79, OR sensitive content\n(competitor / IBM / renewal),\nOR validator failed after retry,\nOR no high-confidence evidence"];
+  PEND -> APPROVED [label="approve / edit\n(sensitive: individually only)"]; PEND -> REJ [label="reject + reason"];
   APPROVED -> SENT [label="console + outbox.jsonl"]; SENT -> end; REJ -> end;
 }

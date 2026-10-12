@@ -1,13 +1,16 @@
-digraph G { rankdir=LR;   graph [fontname="DejaVu Sans", fontsize=11, bgcolor="white", pad=0.3, nodesep=0.45, ranksep=0.55];
+digraph G { rankdir=LR; graph [fontname="DejaVu Sans", fontsize=11, bgcolor="white", pad=0.3, nodesep=0.45, ranksep=0.55];
   node  [fontname="DejaVu Sans", fontsize=10, color="#3b4a63", fontcolor="#1b2230", penwidth=1.2];
   edge  [fontname="DejaVu Sans", fontsize=9, color="#5b6475", fontcolor="#3b4a63", arrowsize=0.7]; compound=true;
   node [shape=box, style="rounded,filled", fillcolor="#eef2f8"];
   subgraph cluster_l { label="Laptop: python -m hunter"; style="rounded,dashed"; color="#5b6475";
-    CLI [label="CLI\nrun, review, event,\nsimulate, report, eval"]; CORE [label="Pipeline core", fillcolor="#2f5bd3", fontcolor="white"];
-    CFG [shape=note, fillcolor="#fff6e0", label="config.yaml\nfixtures.json"]; REP [shape=note, fillcolor="#fff6e0", label="llm_replay/"];
-    DB [shape=cylinder, fillcolor="#e8f4ec", label="SQLite\nhunter.db"]; OUT [shape=note, fillcolor="#fff6e0", label="report.md / .html\noutbox.jsonl"];
-    API [label="hunter serve\nPOST /events, /tick"]; }
-  N8N [label="n8n (local, optional)\nwebhook + schedule"]; CL [label="Claude API\n(live mode only)"]; GH [label="GitHub code search\n(opt-in, token)"];
-  CLI -> CORE; CFG -> CORE; CORE -> REP [label="default"]; CORE -> CL [style=dashed, label="live"]; CORE -> GH [style=dashed, label="opt-in"];
-  CORE -> DB; DB -> OUT; N8N -> API [style=dashed]; API -> CORE;
+    CLI [label="CLI\nrun, review, approve, edit,\nevent, simulate, report, eval"]; CORE [label="Pipeline core", fillcolor="#2f5bd3", fontcolor="white"];
+    CFG [shape=note, fillcolor="#fff6e0", label="config.yaml\ndata/fixtures.json"]; REP [shape=note, fillcolor="#fff6e0", label="data/llm_replay/\n(default)"];
+    SNAP [shape=note, fillcolor="#fff6e0", label="data/github_snapshot.json\n(no-token fallback)"];
+    DB [shape=cylinder, fillcolor="#e8f4ec", label="SQLite\nhunter.db"]; OUT [shape=note, fillcolor="#fff6e0", label="out/\nreport.md, report.html,\noutbox.jsonl"];
+    API [label="hunter serve (optional)\nPOST /events, /tick"]; }
+  CL [label="Claude API\n(live mode only)"]; GH [label="GitHub code search\n(opt-in, token)"];
+  ORCH [label="Any HTTP orchestrator\n(not part of the PoC)", style="rounded,dashed", fillcolor="white"];
+  CLI -> CORE; CFG -> CORE; CORE -> REP [label="replay"]; CORE -> CL [style=dashed, label="--llm live"];
+  CORE -> GH [style=dashed, label="--source github"]; SNAP -> CORE [style=dashed, label="no token"];
+  CORE -> DB; DB -> OUT; ORCH -> API [style=dashed]; API -> CORE;
 }
