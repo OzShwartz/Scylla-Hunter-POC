@@ -139,9 +139,9 @@ GitHub source (live): 10 raw match(es) -> 2 probable user(s), 8 excluded (gh_sky
 
 A `probable_user` account gets no firmographics (`employees: null`) → status `NEEDS_ENRICHMENT`, plus a generated people-search query - it's still not scored or contacted; a human enriches and confirms before anything moves forward. Without a token, the command falls back to the committed, dated snapshot (`data/github_snapshot.json` - org/repo-level facts only, no individual contributor data) and says so; the same classification pipeline runs over it either way. See `tests/test_sources.py`, including a test that pins this exact verified table.
 
-## n8n trigger layer (FR-12, optional)
+## Integration-ready trigger endpoints (FR-12, optional)
 
-`python -m hunter serve` exposes `POST /events` and `POST /tick` - the exact same trigger logic the CLI's `event`/`simulate` commands call, just reachable over HTTP. `n8n/hunter_triggers.json` wires a webhook (connection accepted → `/events`) and a daily schedule (→ `/tick`); `n8n/README.md` has the exact steps to run it locally with `npx n8n`. Optional - the CLI demo above is the primary path; this just shows how the same core maps onto the stack named in the job description.
+`python -m hunter serve` exposes `POST /events` and `POST /tick` - the exact same trigger logic the CLI's `event`/`simulate` commands call, just reachable over HTTP (`tests/test_server.py` proves the HTTP and CLI paths land in the same DB state). Any orchestrator that can make an HTTP call - n8n, Make, Salesforce Flow, a cron job - can drive the pipeline through these with no code changes. n8n is the production recommendation (PRD §14.5); actually wiring and running an n8n workflow against it is left as an exercise, not shipped here - I'd rather ship two tested endpoints than an unverified workflow export. Optional - the CLI demo above is the primary path.
 
 ## How this was built
 

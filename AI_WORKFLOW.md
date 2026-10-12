@@ -431,4 +431,17 @@ While staging the Phase 0 scaffold commit, `git status` showed `.env.example` (t
 
 **Result:** `hunter serve`'s two endpoints, their shared logic with the CLI, and FR-12's actual AC (same DB state over HTTP vs. CLI) are built and tested - `pytest -q`: **157/157** (5 new tests in `tests/test_server.py`). The n8n workflow file and README are written but unverified, and no screenshot was produced, for the reasons above - this is the "stop and tell me" case the 2.5h timebox was for, surfaced as soon as both blockers (no screenshot tool, n8n failing to install in this sandbox) were confirmed rather than after burning the full budget retrying.
 
-**Decisions made by the human:** pending - whether to accept the n8n piece as code-level-verified-only (test_server.py proves the trigger logic; the workflow file and screenshot are Oz's to verify/produce locally), or treat it as design-only per the timebox's own fallback.
+**Decisions made by the human:** resolved in Entry #19 - the unverified n8n workflow export was removed from the deliverable rather than kept as a best-effort artifact.
+
+---
+
+## Entry #19 — 2026-10-12 — Decision: ship nothing unverified; n8n workflow removed, endpoints kept
+
+**Prompt (summarized):** final pre-submission pass, Part 2: the n8n workflow JSON and its README were never verified against a real running n8n instance (Entry #18) - remove them from the deliverable. Keep `hunter serve` (`/events`, `/tick`) and `tests/test_server.py` as "integration-ready endpoints" - that part *is* tested and real. Reframe FR-12 and the README around "any orchestrator can call these, n8n is the production recommendation per PRD §14.5" instead of claiming a working n8n integration.
+
+**What Claude did:**
+- Deleted `n8n/hunter_triggers.json` and `n8n/README.md` (and the now-empty `n8n/` directory). `hunter/server.py`, `hunter/triggers.py`'s `tick()`, and `tests/test_server.py` are untouched - they were never the unverified part.
+- Reworded PRD FR-12 (now "Integration-ready trigger endpoints") and the README's FR-12 section to describe exactly what's proven (`tests/test_server.py`'s HTTP-vs-CLI equivalence check) and name n8n only as the production recommendation (§14.5), not as something wired up here.
+- Checked `requirements.txt`'s fastapi/uvicorn/httpx comment - it already names the real reason (`hunter serve` and `TestClient` only) from Phase 8, not stale, left as is.
+
+**Decisions made by the human:** the n8n workflow file and its screenshot were a COULD item inside a hard 2.5h timebox (Entry #18) that the environment couldn't satisfy (no screenshot tool at all; `npx n8n`/`npm install -g n8n` both failed in ways unrelated to this codebase - see the separate local-machine troubleshooting, not part of this repo). Rather than ship an artifact nobody had confirmed actually imports and runs, Oz decided to cut it entirely and keep only the half that was independently tested - the two endpoints and their equivalence test. Principle going forward: **no unverified deliverables** - a tested, narrower claim beats an untested, broader one.

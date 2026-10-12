@@ -453,9 +453,8 @@ Each requirement has acceptance criteria (AC) that the tests or the demo verify.
 **FR-11 Database.** SQLite, schema in §13.
 - AC: `hunter reset` recreates an empty DB.
 
-**FR-12 Trigger endpoint for n8n** **[beyond the brief]**. `hunter serve` exposes `POST /events` (for example connection_accepted) and `POST /tick` (process time-based rules) - thin FastAPI wrappers over the same `hunter/triggers.py` functions the CLI calls, then the same `hunter/dispatch.py` sweep. The n8n workflow export in `n8n/hunter_triggers.json` calls them from a webhook and a schedule trigger; `n8n/README.md` has exact run steps.
-- AC: importing the workflow and calling its webhook produces the same DB result as the equivalent CLI command (`tests/test_server.py` proves this at the code level - a paired DB built the same way, driven once over HTTP and once directly, compared field for field).
-- AC: importing the workflow and calling its webhook produces the same DB result as the CLI command.
+**FR-12 Integration-ready trigger endpoints** **[beyond the brief]**. `hunter serve` exposes `POST /events` (for example connection_accepted) and `POST /tick` (process time-based rules) - thin FastAPI wrappers over the same `hunter/triggers.py` functions the CLI calls, then the same `hunter/dispatch.py` sweep. Any orchestrator that can make an HTTP call (n8n, Make, Salesforce Flow, a cron job) can drive the pipeline through these two endpoints with no code changes. n8n is the production recommendation (§14.5) - wiring and running an actual n8n workflow is outside this PoC's scope, not shipped here.
+- AC: calling an endpoint produces the same DB result as the equivalent CLI command (`tests/test_server.py` proves this at the code level - a paired DB built the same way, driven once over HTTP and once directly, compared field for field).
 
 **FR-13 Evaluation** **[beyond the brief]**. `hunter eval` compares extraction and selection to `_expected` and checks message validators and grounding. It prints a scorecard and exits non-zero on regression.
 - AC: on the committed replay set, the scorecard is 100% for extraction and selection.
