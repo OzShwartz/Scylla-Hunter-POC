@@ -34,6 +34,7 @@ This file is long - load the section you need rather than the whole file. The Hi
 | 22 | 10-12 | Part 3c: PRD §9.4 table didn't match the real output |
 | 23 | 10-12 | Part 4: full audit (code quality, security, cost) + safe auto-fixes |
 | 24 | 10-12 | AUDIT.md follow-through: the four deferred items, resolved |
+| 25 | 10-12 | Pre-submit cleanup: stale n8n doc claims, a real sent_at bug |
 
 ## Highlights: where human review caught what the automated checks missed
 
@@ -560,3 +561,19 @@ While staging the Phase 0 scaffold commit, `git status` showed `.env.example` (t
 **Result:** `pytest -q`: 157/157. `hunter eval`: 100%. `examples/` and the README are in sync with the real `personalize.v9` output. All four `AUDIT.md`-deferred items are resolved (two left as documented tradeoffs, two fixed).
 
 **Decisions made by the human:** all four covered above, plus the `.env` token rotation and the secret-scanning habit change - both already acted on as instructed.
+
+---
+
+## Entry #25 — 2026-10-12 — Pre-submit cleanup: stale n8n doc claims, a real sent_at bug
+
+**Prompt (summarized):** fix PRD §2.2/§16.1's remaining "n8n is shipped" framing (the pre-submit check caught two instances beyond the §16.2 row already fixed); `sent_at` should come from the simulated clock, not `datetime.now()`, with one test; confirm three prior fixes by file:line; push, then verify a real fresh clone from GitHub.
+
+**What Claude did:**
+- Grepped every `n8n` mention across PRD/README/CLAUDE.md rather than guessing which were stale - most describe production design or the job-description context and were already accurate; fixed exactly three: §2.2's "n8n trigger layer" addition row, §12.2's "PoC + n8n" row, and §16.1's `hunter serve` row and its own second, drifted copy of the quickstart (replaced with a pointer to the README's, since a second copy had already drifted twice).
+- Found a real bug while tracing the fix: `cli.py`'s `simulate` command called `datetime.now()` twice - once for `triggers.simulate` (which advances it by `timedelta(days=...)` per message) and again, independently, for the auto-dispatch sweep. For a message auto-sent within that same `simulate --days 7` call (Tom's cold email, route=auto), this made `sent_at` ~7 days *before* its own `created_at`. Fixed by capturing `now` once and passing `now + timedelta(days=days)` to dispatch - the end of the simulated window, matching `server.py`'s already-correct single-capture pattern.
+- No existing test exercised `cli.py`'s command wiring at all (only `hitl.py`/`triggers.py`/`dispatch.py` directly) - added one `CliRunner`-based test to `tests/test_dispatch.py` and verified it actually catches the regression by temporarily reverting the fix and confirming the test failed (`sent_at` 7 days before `created_at`) before restoring it.
+- Confirmed by file:line rather than re-deriving: `prompts/personalize.md:9` (injection guard), `hunter/llm.py:62-63` (cache-token fields), `README.md:147` (security section).
+
+**Result:** `pytest -q`: 158/158. `hunter eval`: 100%. `examples/` regenerated - the real quickstart's auto-dispatched cold email now shows `sent_at == created_at`.
+
+**Decisions made by the human:** none required - direct fixes to findings already raised in the pre-submit report.

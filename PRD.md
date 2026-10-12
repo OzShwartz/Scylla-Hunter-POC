@@ -82,7 +82,7 @@ The reviewer can clone the repo and run the whole flow in minutes with **no API 
 |---|---|
 | Human-in-the-loop approval **[beyond the brief]** | AI-written outreach is a brand risk. Shows judgment about where automation should stop. |
 | Evaluation runner **[beyond the brief]** | Makes "AI quality" measurable instead of a claim. |
-| n8n trigger layer **[beyond the brief]** | n8n is named in the job description. Shows how the PoC maps onto the team's stack. |
+| Integration-ready trigger endpoints (`hunter serve`) **[beyond the brief]** | Any HTTP-capable orchestrator (n8n, named in the job description, is the production recommendation) can drive the pipeline with no code changes. |
 | HTML report **[beyond the brief]** | Readable demo for non-engineers. Markdown stays the primary format. |
 | KPIs and diagrams (DFD, ERD, infra) **[beyond the brief]** | Communicates the design to technical and non-technical readers. |
 
@@ -625,7 +625,7 @@ Every prompt has a version (`personalize.v1`). Every message stores the version,
 | Environment | Events from | Time from |
 |---|---|---|
 | PoC, CLI | `hunter event connection-accepted --lead p01` | Simulated clock: `hunter simulate --days 7` advances "now" and replays scripted events from fixtures |
-| PoC + n8n | n8n webhook → `POST /events` | n8n schedule → `POST /tick` |
+| PoC + an HTTP orchestrator (e.g. n8n) | webhook → `POST /events` | schedule → `POST /tick` |
 | Production | Acceptance and reply events from the sending tools via n8n | n8n schedules |
 
 The rule logic is identical in all three. Only the source of events and time changes.
@@ -1018,22 +1018,9 @@ flowchart LR
 | `hunter report [--html]` | Write the report |
 | `hunter eval` | Scorecard against `_expected` |
 | `hunter reset` | Empty the database |
-| `hunter serve` | HTTP endpoints for n8n |
+| `hunter serve` | Integration-ready HTTP endpoints (`/events`, `/tick`) - any HTTP-capable orchestrator, n8n included |
 
-Quickstart, which the README must keep working:
-
-```bash
-pip install -r requirements.txt
-python -m hunter reset
-python -m hunter run                 # 5 qualified; 2 auto-sent, 3 pending
-python -m hunter review              # see pending drafts with evidence
-python -m hunter approve --all       # Joris, Lior, Dana - all pending on score alone
-python -m hunter simulate --days 7   # accepts on day 2 and 4; Tom's cold email auto-sends (purely technical)
-python -m hunter review              # 3 of the 4 remaining emails tagged [SENSITIVE CONTENT]; Lior's is score-band
-python -m hunter approve --all       # approves Lior's; skips the other 3, with their ids
-python -m hunter approve <msg_id>    # read each flagged one, then approve individually (x3)
-python -m hunter report --html
-```
+Quickstart: see [README.md](README.md#quickstart-no-keys-2-minutes-python-311) - the single source of truth for the exact command sequence, kept runnable by `scripts/regenerate_examples.sh`. Do not duplicate it here; a second copy drifts (this one already had, twice).
 
 ### 16.2 Repository layout
 

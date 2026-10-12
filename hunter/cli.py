@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import typer
 from dotenv import load_dotenv
@@ -332,10 +332,11 @@ def simulate(
     fixtures = sources.load_fixtures()
 
     conn = db.connect(config.runtime.db_path)
-    run_id = db.insert_run(conn, command="simulate", llm_mode=llm_mode, started_at=datetime.now())
+    now = datetime.now()
+    run_id = db.insert_run(conn, command="simulate", llm_mode=llm_mode, started_at=now)
     try:
         stats = triggers.simulate(
-            conn, config, days=days, llm_mode=llm_mode, run_id=run_id, now=datetime.now(),
+            conn, config, days=days, llm_mode=llm_mode, run_id=run_id, now=now,
             scripted_events=fixtures.simulated_events,
         )
     except ReplayMissError as e:
@@ -356,7 +357,10 @@ def simulate(
         cache_creation_input_tokens=stats.cache_creation_input_tokens,
         cache_read_input_tokens=stats.cache_read_input_tokens,
     )
-    dispatch_stats = dispatch.dispatch_approved(conn, config, run_id=run_id, now=datetime.now())
+    # Dispatch happens at the end of the simulated window, not at the real wall-clock
+    # moment this command happens to run - otherwise an auto-sent message's sent_at
+    # could land before its own created_at (day 2/4/7 in the simulated timeline).
+    dispatch_stats = dispatch.dispatch_approved(conn, config, run_id=run_id, now=now + timedelta(days=days))
     if dispatch_stats.sent_message_ids:
         typer.echo(f"\n{len(dispatch_stats.sent_message_ids)} message(s) dispatched (dry-run) - see outbox.jsonl")
     conn.close()

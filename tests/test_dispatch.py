@@ -103,3 +103,31 @@ def test_dispatch_refuses_to_run_outside_dry_run(dispatch_setup):
     test_config.runtime.dry_run = False
     with pytest.raises(RuntimeError, match="dry_run"):
         dispatch.dispatch_approved(conn, test_config, run_id=None, now=datetime.now())
+
+
+def test_simulate_cli_sent_at_is_not_before_created_at(config, tmp_path, monkeypatch):
+    """`hunter simulate --days 7` auto-dispatches Tom's cold email (route=auto) in the
+    same invocation that drafted it at simulated day 7. sent_at must come from that same
+    simulated clock, not an independent datetime.now() call made moments later - which
+    would make a day-7-created message look like it was sent before it was created."""
+    from typer.testing import CliRunner
+    from hunter import cli
+
+    test_db_path = str(tmp_path / "hunter.db")
+    test_config = config.model_copy(deep=True)
+    test_config.runtime.db_path = test_db_path
+    test_config.runtime.outbox_path = str(tmp_path / "outbox.jsonl")
+    monkeypatch.setattr(cli, "load_config", lambda: test_config)
+
+    runner = CliRunner()
+    assert runner.invoke(cli.app, ["reset"]).exit_code == 0
+    assert runner.invoke(cli.app, ["run"]).exit_code == 0
+    assert runner.invoke(cli.app, ["approve", "--all"]).exit_code == 0
+    assert runner.invoke(cli.app, ["simulate", "--days", "7"]).exit_code == 0
+
+    conn = db.connect(test_db_path)
+    tom_cold = next(
+        m for m in db.list_messages_for_lead(conn, "p02") if m["channel"] == "email" and m["variant"] == "cold"
+    )
+    assert tom_cold["status"] == "SENT"
+    assert tom_cold["sent_at"] >= tom_cold["created_at"]
