@@ -6,6 +6,8 @@ Named to match the PRD §18.1 test table directly.
 
 from __future__ import annotations
 
+import os
+import tempfile
 from datetime import datetime
 
 import pytest
@@ -15,7 +17,7 @@ from hunter import extract as extract_mod
 from hunter import personalize as personalize_mod
 from hunter.sources import load_fixtures
 
-COLD_EMAIL_TEST_DB_PATH = "/tmp/hunter_pytest_cold_email_7_days.db"
+COLD_EMAIL_TEST_DB_PATH = os.path.join(tempfile.gettempdir(), "hunter_pytest_cold_email_7_days.db")
 
 
 @pytest.fixture

@@ -8,6 +8,8 @@ hasn't been approved and dispatched yet - can never get a warm or cold email.
 
 from __future__ import annotations
 
+import os
+import tempfile
 from datetime import datetime
 
 import pytest
@@ -18,7 +20,7 @@ from hunter import personalize as personalize_mod
 from hunter import scoring
 from hunter.sources import load_fixtures
 
-NO_EMAIL_TEST_DB_PATH = "/tmp/hunter_pytest_no_email_before_invite.db"
+NO_EMAIL_TEST_DB_PATH = os.path.join(tempfile.gettempdir(), "hunter_pytest_no_email_before_invite.db")
 
 
 @pytest.fixture

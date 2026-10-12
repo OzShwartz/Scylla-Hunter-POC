@@ -4,7 +4,19 @@ A small, runnable PoC for an AI-driven competitor-displacement hunter: it finds 
 
 Full spec: **[PRD.md](PRD.md)**. Build log: **[AI_WORKFLOW.md](AI_WORKFLOW.md)**.
 
+**TL;DR**
+- **The need:** reach users of a competitor (DataStax) with an automated "hunter" instead of manual prospecting.
+- **The solution:** a Python pipeline - public evidence qualifies a company, deterministic scoring picks the right people (a LinkedIn profile per lead), Claude drafts the invite and follow-up email, trigger rules fire in dry-run behind a human-approval gate, and SQLite plus an HTML report track every lead and message.
+- **See it:** run the quickstart below (~2 minutes, no API key), or browse the committed output in [`examples/`](examples/).
+
+![Scylla Hunter report - funnel, engagement and HITL summary](docs/report_screenshot.png)
+*The generated `report.html` (top of the page) - from [`examples/report.html`](examples/report.html).*
+
 ## Quickstart (no keys, ~2 minutes, Python 3.11+)
+
+Run from the repo root, line by line to see each step's output (recommended), or paste a whole block.
+
+**macOS / Linux (bash, zsh):**
 
 ```bash
 git clone https://github.com/OzShwartz/Scylla-Hunter-POC.git && cd Scylla-Hunter-POC
@@ -20,9 +32,12 @@ python -m hunter review              # msg#6, #9, #10 are tagged [SENSITIVE CONT
 python -m hunter approve --all       # skips #6/#9/#10 again, with their ids
 python -m hunter approve 6 9 10
 python -m hunter report --html       # out/report.md and out/report.html
+open out/report.html                 # macOS; on Linux: xdg-open out/report.html
+python -m hunter eval                # scorecard vs. expected results -> VERDICT: PASS
+python -m pytest -q                  # 162 tests
 ```
 
-**Windows (PowerShell):** the same commands, just venv activation differs.
+**Windows (PowerShell):** the same commands; venv activation and opening the report differ.
 
 ```powershell
 git clone https://github.com/OzShwartz/Scylla-Hunter-POC.git; cd Scylla-Hunter-POC
@@ -30,16 +45,21 @@ python -m venv .venv; .venv\Scripts\Activate.ps1
 # If activation is blocked by the execution policy: Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 pip install -r requirements.txt
 python -m hunter reset
-python -m hunter run
-python -m hunter review
+python -m hunter run                 # 5 qualified leads; 2 invites auto-sent, 3 pending
+python -m hunter review              # see pending drafts with evidence and routing reason
 python -m hunter edit 5 --text "Hi Dana, congrats on the move to Brightwave AI - I came across your previous work on fraud-scoring infrastructure and would be glad to connect."
-python -m hunter approve --all
-python -m hunter simulate --days 7
-python -m hunter review
-python -m hunter approve --all
+python -m hunter approve --all       # approves the remaining score-band ones; skips anything content-sensitive
+python -m hunter simulate --days 7   # 2 accept -> warm email; 3 don't -> cold email
+python -m hunter review              # msg#6, #9, #10 are tagged [SENSITIVE CONTENT]
+python -m hunter approve --all       # skips #6/#9/#10 again, with their ids
 python -m hunter approve 6 9 10
-python -m hunter report --html
+python -m hunter report --html       # out\report.md and out\report.html
+start out\report.html                # opens the report in your browser
+python -m hunter eval                # scorecard vs. expected results -> VERDICT: PASS
+python -m pytest -q                  # 162 tests
 ```
+
+`hunter report --html` also prints a clickable `file://` link to the report.
 
 These message ids are deterministic - replay mode makes the same drafts every time, in the same order. Everything above runs against a committed **replay set** (`data/llm_replay/`): real Claude responses recorded once, replayed deterministically. `--llm live` plus `ANTHROPIC_API_KEY` in `.env` re-records them; the reviewer never needs a key.
 
@@ -50,6 +70,16 @@ Output (`outbox.jsonl`, `report.md`, `report.html`) is written to the git-ignore
 ScyllaDB is CQL/Cassandra-compatible, so a team running DataStax or Cassandra can switch with the lowest rewrite cost of any competitor's customer base. IBM completed its acquisition of DataStax in May 2025 - a classic moment for a buyer to re-evaluate options, which the project treats as a *neutral* trigger, never fear-based messaging (enforced in code, not just asked for in the prompt - see §9.6 and `validators.is_sensitive_content`).
 
 "Users of DataStax" is read as *people at companies with evidence of running DataStax products or self-managed Apache Cassandra* - not DataStax employees (suppressed), and self-managed Cassandra counts because the same compatibility argument applies. Discovery is **account-first**: evidence qualifies a company, then the right people are chosen inside it, ending in a LinkedIn profile URL per lead - never a raw LinkedIn search or scrape. Full reasoning, assumptions, and the questions this would need answered from a real hiring manager: **[PRD.md §3](PRD.md#3-discovery-business-context-and-why-now), [§21](PRD.md#21-assumptions-and-open-questions)**.
+
+## Requirements → where
+
+| The assignment asked for | Where it's met |
+|---|---|
+| Identify relevant users on LinkedIn | Account-first discovery → people lookup, ending in a LinkedIn profile URL per lead (`hunter/scoring.py`, `hunter/sources.py`) |
+| AI-personalized invite + follow-up email | `hunter/personalize.py`, via Claude (`hunter/llm.py`), grounded and validated |
+| Trigger logic, with a dry run | R1-R3 in `hunter/triggers.py`: qualified → invite; accepted → warm email; no reply in 7 days → cold email. Dry-run to console + `outbox.jsonl` (`hunter/dispatch.py`) |
+| A report of leads gathered/selected/sent, kept in a database | SQLite, 6 tables (`hunter/db.py`); `hunter report --html` (`hunter/report.py`) |
+| Repo, run instructions, output examples, the prompts/agents used to build it | This README's quickstart; [`examples/`](examples/); [AI_WORKFLOW.md](AI_WORKFLOW.md), [`CLAUDE.md`](CLAUDE.md), [`.claude/skills/`](.claude/skills/) (build) and [`prompts/`](prompts/) (runtime) |
 
 ## Architecture
 
@@ -89,7 +119,7 @@ Real output from `examples/run_log.txt` - nothing in this section is invented.
 
 ## How quality is measured
 
-`hunter eval` scores every run against fixture `_expected` values - never read by the pipeline itself, only by the evaluator: **32/32** extraction fields, **13/13** lead selections, **10/10** grounded messages. **161 automated tests** cover scoring, gates, validators, HITL routing, triggers, dispatch, the report, and the GitHub source. Grounding is enforced in code, not just prompted: every `evidence_quote` must be a verbatim substring of the source text, every cited evidence id must exist and belong to the lead's account, and every named person must actually appear in the source.
+`hunter eval` scores every run against fixture `_expected` values - never read by the pipeline itself, only by the evaluator: **32/32** extraction fields, **13/13** lead selections, **10/10** grounded messages. **162 automated tests** cover scoring, gates, validators, HITL routing, triggers, dispatch, the report, and the GitHub source. Grounding is enforced in code, not just prompted: every `evidence_quote` must be a verbatim substring of the source text, every cited evidence id must exist and belong to the lead's account, and every named person must actually appear in the source.
 
 ## Assumptions
 
@@ -116,15 +146,6 @@ These are the commercial assumptions I'd confirm with the hiring team; each maps
 | Content-sensitive HITL override | Found empirically (Phase 2): the highest-scoring account produced the most commercially sensitive draft and, on score alone, would have auto-sent - score and risk are orthogonal, so routing now checks both |
 | Replay mode as the default | The reviewer runs the whole thing in minutes, with no key, deterministically - see `hunter/llm.py` |
 | No LinkedIn scraping or automation, anywhere | Legal/ToS risk is real and recent; invites are "sent" only to console + `outbox.jsonl` |
-
-## Requirements → where
-
-| The assignment asked for | Where it's met |
-|---|---|
-| Identify relevant users on LinkedIn | Account-first discovery → people lookup, ending in a LinkedIn profile URL per lead (`hunter/scoring.py`, `hunter/sources.py`) |
-| AI-personalized invite + follow-up email | `hunter/personalize.py`, via Claude (`hunter/llm.py`), grounded and validated |
-| Trigger logic, with a dry run | R1-R3 in `hunter/triggers.py`: qualified → invite; accepted → warm email; no reply in 7 days → cold email. Dry-run to console + `outbox.jsonl` (`hunter/dispatch.py`) |
-| A report of leads gathered/selected/sent, kept in a database | SQLite, 6 tables (`hunter/db.py`); `hunter report --html` (`hunter/report.py`) |
 
 ## What I deliberately left out, and why
 

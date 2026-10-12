@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import typer
 from dotenv import load_dotenv
@@ -380,6 +381,8 @@ def report_cmd(
     typer.echo(f"Wrote {config.runtime.report_path}")
     if html:
         typer.echo(f"Wrote {config.runtime.report_html_path}")
+        # A clickable file:// URI - most terminals open it in the browser on click.
+        typer.echo(f"Open in browser: {Path(config.runtime.report_html_path).resolve().as_uri()}")
     conn.close()
 
 

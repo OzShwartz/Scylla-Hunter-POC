@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
+import tempfile
 from datetime import datetime
 from pathlib import Path
 
@@ -13,7 +15,7 @@ from hunter import extract as extract_mod
 from hunter import personalize as personalize_mod
 from hunter.sources import load_fixtures
 
-DISPATCH_TEST_DB_PATH = "/tmp/hunter_pytest_dispatch.db"
+DISPATCH_TEST_DB_PATH = os.path.join(tempfile.gettempdir(), "hunter_pytest_dispatch.db")
 
 
 @pytest.fixture

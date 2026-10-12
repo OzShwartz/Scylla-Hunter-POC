@@ -1,5 +1,6 @@
 import os
 import sys
+import tempfile
 from datetime import datetime
 
 import pytest
@@ -12,7 +13,7 @@ from hunter import personalize as personalize_mod
 from hunter.models import load_config
 from hunter.sources import load_fixtures
 
-TEST_DB_PATH = "/tmp/hunter_pytest.db"
+TEST_DB_PATH = os.path.join(tempfile.gettempdir(), "hunter_pytest.db")
 
 
 @pytest.fixture(scope="session")

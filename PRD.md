@@ -12,6 +12,8 @@
 > **This document is the single source of truth for the build.** Code, prompts and README follow it. If something in the code disagrees with this PRD, the PRD is updated first, then the code.
 >
 > Items marked **[beyond the brief]** are not required by the assignment. They were added deliberately and are explained where they appear.
+>
+> **Reviewer, short on time?** §1, §2, §9.6 and §12.3 cover the essentials.
 
 ---
 
@@ -353,7 +355,7 @@ account_score   = round(evidence_points + icp_points + why_now_points)      (max
 | Quanta Retail | customer_reference 18.8 | — | — | — | — | SUPPRESSED (customer) |
 | DataStax | — | — | — | — | — | SUPPRESSED (competitor) |
 
-> The Evidence column sums the two signal values at full precision and rounds only once for display (`f"{evidence_points:.1f}"` in `scoring.py`), matching the code exactly - confirmed by direct recomputation (`scoring.compute_signal_value`): Northwind's 26.3486... + 29.3246... = 55.67..., which displays as **55.7**, not the 55.6 an earlier draft of this table got by rounding each signal value to one decimal before summing.
+> The Evidence column sums the two signal values at full precision and rounds only once for display, matching `scoring.py` exactly (Northwind: 26.35 + 29.32 = 55.67 → **55.7**).
 
 ### 9.5 Person ranking
 
@@ -376,7 +378,7 @@ Take the top `max_leads_per_account = 2`. Example: at Northwind, Maya (decision 
 | **Draft mentions a competitor product, the IBM/DataStax acquisition (`cf_ibm`), or a renewal/contract** | **Human approval (forced), regardless of score or `approval_mode`** |
 | `approval_mode = off` | Auto-approve everything that passes validators (testing only) - still subject to the sensitive-content override above |
 
-Score reflects lead *quality*, not message *risk* - a high-scoring account can still produce a draft that references a competitor product or commercial terms, and that always gets a human's eyes first. This was found during manual review: an early cold email to a 96-scoring lead (Northwind) was auto-approved by score alone, even though it was the most commercially sensitive of the three sample drafts reviewed (it named the IBM/DataStax acquisition and implied a contract renewal date). See `hunter/validators.is_sensitive_content` and AI_WORKFLOW.md.
+Score reflects lead *quality*, not message *risk* - a high-scoring account can still produce a draft that references a competitor product or commercial terms, and that always gets a human's eyes first. See `hunter/validators.is_sensitive_content`; how this was found is in AI_WORKFLOW.md.
 
 Result on fixtures: Northwind's two invites are auto-approved (invites never reference a competitor product, by a separate validator); Lumen's, Kestrel's and Brightwave's invites go to review on score alone. Warm and cold emails that legitimately reference the competitor (the core of the pitch, in practice) route to human review far more often than score alone would suggest - this is intentional.
 
@@ -580,7 +582,7 @@ No email addresses or other personal data that the text does not need.
 | Primary (first) evidence id differs from, and the message doesn't also cite, another account message's primary evidence | — | ✓ |
 | Sender's name, title and company all appear, before the opt-out line | — | ✓ |
 
-The sender-claims, connection-framing, `cf_ibm`-opening and same-account-wording-distinctness checks are pattern-based (regex / position window / n-gram overlap against a documented threshold), not a general semantic grounding check - free-text hallucination has no fully general deterministic test. They catch the known failure shape; see `hunter/validators.py`. The `cf_ibm`-for-practitioner, `cf_ibm`-evidence, same-account-primary-evidence and sign-off checks are the exceptions: `evidence_ids`/`context_fact_ids` are structured fields and the sender's name/title/company are exact known strings, so those four checks are exact, not heuristic. `cf_ibm` is also withheld from a practitioner's *allowed* context facts in the prompt itself (`personalize._render_context_facts_block`, config-driven via `context_facts[].allowed_personas`) - the validator is the deterministic backstop, not the only line of defense. The wording-distinctness check's 30% 5-gram-overlap threshold is chosen to tolerate shared boilerplate (the opt-out line, the sign-off) while catching a near-identical draft with the name swapped - see `validators.MAX_FIVE_GRAM_OVERLAP_FRACTION`. The primary-evidence check is the sturdier of the two same-account checks: a first real recorded draft (Tom's cold email) satisfied the wording check by varying its phrasing while still restating a sibling's headline facts from a different evidence item cited as a second source - the primary-evidence check closes that gap by forbidding a sibling's lead evidence id from being cited at all, not just from being cited first.
+The sender-claims, connection-framing, `cf_ibm`-opening and same-account-wording-distinctness checks are pattern-based (regex / position window / n-gram overlap against a documented threshold), not a general semantic grounding check - free-text hallucination has no fully general deterministic test. They catch the known failure shape; see `hunter/validators.py`. The `cf_ibm`-for-practitioner, `cf_ibm`-evidence, same-account-primary-evidence and sign-off checks are exact, not heuristic: they match structured fields (`evidence_ids`, `context_fact_ids`) or known strings (the sender's name, title and company). `cf_ibm` is also withheld from a practitioner's allowed context facts in the prompt itself (`context_facts[].allowed_personas`); the validator is the backstop. The wording-distinctness threshold (30% 5-gram overlap, `validators.MAX_FIVE_GRAM_OVERLAP_FRACTION`) tolerates shared boilerplate such as the opt-out line and sign-off while catching a near-identical draft with the name swapped.
 
 **Guardrails summary:**
 - *Input:* source text is delimited and treated as data (prompt-injection defence). Only minimal context is sent.
@@ -640,8 +642,8 @@ The rule logic is identical in all three. Only the source of events and time cha
 3. `hunter simulate --days 7`:
    - Maya (decision_maker) accepts on day 2 → warm email. Her evidence is Astra DB usage, and the grounded warm email names it - forced to review by the §9.6 sensitive-content override on the vendor-name mention alone (this draft does not cite `cf_ibm`).
    - Lior (practitioner) accepts on day 4 → warm email, pending approval (score-based, 78 < 80). Purely technical - no vendor name, no `cf_ibm` - so his is the one email in the batch the content override does not touch.
-   - Tom (practitioner), Joris (decision_maker) and Dana (decision_maker) do not accept → cold emails on day 7. Tom's is now purely technical too (score 96 ≥ 80, no vendor name, no `cf_ibm` → **auto-approved and sent**, not forced to review) - the practitioner-angle rule (§11.5) removed the routing gap this case exposed in Phase 4, where Tom's draft had named Astra DB and the acquisition despite being a practitioner. Joris's and Dana's are decision_maker drafts that cite `cf_ibm` as one clause after the main migration/throughput argument, not as the opener - still forced to review by the vendor-name mention (DataStax Enterprise / Astra DB), as intended.
-4. `hunter review` shows Maya's, Joris's and Dana's emails tagged `[SENSITIVE CONTENT]` - three of the five, down from four once the practitioner-angle rule took effect. `hunter approve --all` approves Lior's (score-band) and reports the other three as skipped. Tom's was already sent automatically in step 3. Read each flagged one, then `hunter approve <msg_id>` individually - here, approve all three once reviewed.
+   - Tom (practitioner), Joris (decision_maker) and Dana (decision_maker) do not accept → cold emails on day 7. Tom's is purely technical too (score 96 ≥ 80, no vendor name, no `cf_ibm` → **auto-approved and sent**, not forced to review), per the practitioner-angle rule (§11.5). Joris's and Dana's are decision_maker drafts that cite `cf_ibm` as one clause after the main migration/throughput argument, not as the opener - still forced to review by the vendor-name mention (DataStax Enterprise / Astra DB), as intended.
+4. `hunter review` shows Maya's, Joris's and Dana's emails tagged `[SENSITIVE CONTENT]` - three of the five. `hunter approve --all` approves Lior's (score-band) and reports the other three as skipped. Tom's was already sent automatically in step 3. Read each flagged one, then `hunter approve <msg_id>` individually - here, approve all three once reviewed.
 5. `hunter report --html`: the account funnel shows 9 gathered, 4 qualified, 2 suppressed, 3 rejected; the lead funnel shows 5 invited, 2 accepted, 5 emailed (2 warm, 3 cold); the HITL summary shows 3 auto / 7 human across 10 messages (route codes: `score_ok` 3, `score_band` 4, `sensitive_content` 3); every sent message lists its evidence with source URL and date.
 
 ---
@@ -1026,7 +1028,7 @@ flowchart LR
 | `hunter reset` | Empty the database |
 | `hunter serve` | Integration-ready HTTP endpoints (`/events`, `/tick`) - any HTTP-capable orchestrator, n8n included |
 
-Quickstart: see [README.md](README.md#quickstart-no-keys-2-minutes-python-311) - the single source of truth for the exact command sequence, kept runnable by `scripts/regenerate_examples.sh`. Do not duplicate it here; a second copy drifts (this one already had, twice).
+Quickstart: see [README.md](README.md#quickstart-no-keys-2-minutes-python-311) - the single source of truth for the exact command sequence, kept runnable by `scripts/regenerate_examples.sh`. Not duplicated here, so the two can never drift.
 
 ### 16.2 Repository layout
 
@@ -1109,12 +1111,12 @@ scylla-hunter/
 
 ### 18.2 Definition of done
 
-- [ ] All MUST items done; quickstart works from a fresh clone.
-- [ ] `hunter eval` shows 100% extraction and selection on the replay set.
-- [ ] All tests pass.
-- [ ] `examples/` regenerated from the final code.
-- [ ] README explains decisions and exclusions; `AI_WORKFLOW.md` is complete.
-- [ ] Secret scan is clean.
+- [x] All MUST items done; quickstart works from a fresh clone.
+- [x] `hunter eval` shows 100% extraction and selection on the replay set.
+- [x] All tests pass.
+- [x] `examples/` regenerated from the final code.
+- [x] README explains decisions and exclusions; `AI_WORKFLOW.md` is complete.
+- [x] Secret scan is clean.
 - [ ] The repo is public and the link has been tested in a private browser window.
 
 ---

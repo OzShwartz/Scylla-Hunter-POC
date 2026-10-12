@@ -5,6 +5,8 @@ function, is exercised manually against the real API, not in the automated suite
 
 from __future__ import annotations
 
+import os
+import tempfile
 from datetime import datetime
 
 import pytest
@@ -24,7 +26,7 @@ from hunter.sources import (
     store_discovered_accounts,
 )
 
-SOURCES_TEST_DB_PATH = "/tmp/hunter_pytest_sources.db"
+SOURCES_TEST_DB_PATH = os.path.join(tempfile.gettempdir(), "hunter_pytest_sources.db")
 
 
 @pytest.fixture

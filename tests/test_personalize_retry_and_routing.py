@@ -1,10 +1,12 @@
 import json
+import os
+import tempfile
 from datetime import datetime
 
 from hunter import db, personalize
 from hunter.llm import LLMResult
 
-MULTI_THREAD_TEST_DB_PATH = "/tmp/hunter_pytest_multithread_block.db"
+MULTI_THREAD_TEST_DB_PATH = os.path.join(tempfile.gettempdir(), "hunter_pytest_multithread_block.db")
 
 
 def test_practitioner_is_never_offered_the_ibm_context_fact(config):

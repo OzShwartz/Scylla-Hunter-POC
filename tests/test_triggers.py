@@ -9,6 +9,8 @@ prompt quality.
 from __future__ import annotations
 
 import json
+import os
+import tempfile
 from datetime import datetime
 
 import pytest
@@ -19,7 +21,7 @@ from hunter.llm import LLMResult
 from hunter.models import SimulatedEvent
 from hunter.sources import load_fixtures
 
-TRIGGERS_TEST_DB_PATH = "/tmp/hunter_pytest_triggers.db"
+TRIGGERS_TEST_DB_PATH = os.path.join(tempfile.gettempdir(), "hunter_pytest_triggers.db")
 
 
 def _valid_follow_up_json(

@@ -7,6 +7,8 @@ status - sharing one connection across tests would make them order-dependent.
 
 from __future__ import annotations
 
+import os
+import tempfile
 from datetime import datetime
 
 import pytest
@@ -16,7 +18,7 @@ from hunter import extract as extract_mod
 from hunter import personalize as personalize_mod
 from hunter.sources import load_fixtures
 
-HITL_TEST_DB_PATH = "/tmp/hunter_pytest_hitl.db"
+HITL_TEST_DB_PATH = os.path.join(tempfile.gettempdir(), "hunter_pytest_hitl.db")
 
 # PRD §12.3: Maya (p01) and Tom (p02) at Northwind (score 96) auto-approve.
 # Joris (p05, Lumen 76), Lior (p08, Kestrel 78) and Dana (p12, Brightwave 61,

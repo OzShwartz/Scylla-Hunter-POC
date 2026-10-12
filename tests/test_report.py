@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+import tempfile
 from datetime import datetime, timedelta
 
 import pytest
@@ -11,8 +13,8 @@ from hunter import extract as extract_mod
 from hunter import personalize as personalize_mod
 from hunter.sources import load_fixtures
 
-REPORT_TEST_DB_PATH = "/tmp/hunter_pytest_report.db"
-POST_RUN_TEST_DB_PATH = "/tmp/hunter_pytest_report_post_run.db"
+REPORT_TEST_DB_PATH = os.path.join(tempfile.gettempdir(), "hunter_pytest_report.db")
+POST_RUN_TEST_DB_PATH = os.path.join(tempfile.gettempdir(), "hunter_pytest_report_post_run.db")
 
 
 @pytest.fixture
