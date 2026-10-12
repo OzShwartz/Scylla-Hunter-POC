@@ -37,6 +37,7 @@ class ReportData:
     sent_messages: list[dict]
     live_accounts: list[dict]
     run_meta: dict
+    lead_cards: list[dict]
 
 
 def _pct(value: float | None) -> str:
@@ -184,6 +185,43 @@ def live_discovered_accounts(conn: sqlite3.Connection) -> list[dict]:
     return out
 
 
+def build_lead_cards(conn: sqlite3.Connection, config: Config) -> list[dict]:
+    """One self-contained card per lead that reached QUALIFIED or later: the
+    account's score breakdown plus every message drafted for this lead, each
+    with its route/reason (hitl.route_info, the same function `review` uses)
+    and cited evidence - report.html's per-lead section needs no further DB
+    reads at render time. Additive only: report.md's own fields are untouched."""
+    cards = []
+    for lead in db.list_leads(conn):
+        if lead["status"] not in QUALIFIED_OR_LATER:
+            continue
+        account = db.get_account(conn, lead["account_id"])
+        messages = []
+        for m in db.list_messages_for_lead(conn, lead["id"]):
+            _, _, reason, code = hitl.route_info(conn, m, account, config)
+            evidence = []
+            for eid in json.loads(m["evidence_ids"]):
+                sig = db.get_signal(conn, eid)
+                if sig is not None:
+                    evidence.append(
+                        {
+                            "id": sig["id"], "type": sig["type"], "source_url": sig["source_url"],
+                            "published_at": sig["published_at"], "confidence": sig["confidence"],
+                            "evidence_quote": sig["evidence_quote"],
+                        }
+                    )
+            messages.append(
+                {
+                    "id": m["id"], "channel": m["channel"], "variant": m["variant"],
+                    "subject": m["subject"], "body": m["body"], "status": m["status"],
+                    "approval_route": m["approval_route"], "route_reason": reason, "route_code": code,
+                    "evidence": evidence,
+                }
+            )
+        cards.append({"lead": lead, "account": account, "messages": messages})
+    return cards
+
+
 def build_report(conn: sqlite3.Connection, config: Config) -> ReportData:
     return ReportData(
         account_funnel=compute_account_funnel(conn),
@@ -195,6 +233,7 @@ def build_report(conn: sqlite3.Connection, config: Config) -> ReportData:
         sent_messages=sent_messages_detail(conn),
         live_accounts=live_discovered_accounts(conn),
         run_meta=run_metadata(conn),
+        lead_cards=build_lead_cards(conn, config),
     )
 
 
@@ -270,16 +309,18 @@ def render_markdown(data: ReportData) -> str:
 
 
 def render_html(data: ReportData) -> str:
+    import base64
+
     from jinja2 import Environment, FileSystemLoader
 
-    env = Environment(
-        loader=FileSystemLoader(str(Path(__file__).resolve().parent.parent / "templates")), autoescape=True
-    )
+    templates_dir = Path(__file__).resolve().parent.parent / "templates"
+    env = Environment(loader=FileSystemLoader(str(templates_dir)), autoescape=True)
     template = env.get_template("report.html.j2")
     accounts_by_id = {a["id"]: a for a in data.accounts}
+    logo_b64 = base64.b64encode((templates_dir / "scylladb_logo.png").read_bytes()).decode()
     return template.render(
         data=data, accounts_by_id=accounts_by_id, account_funnel_stages=ACCOUNT_FUNNEL_STAGES,
-        funnel_stages=FUNNEL_STAGES, personas=PERSONAS,
+        funnel_stages=FUNNEL_STAGES, personas=PERSONAS, logo_b64=logo_b64,
     )
 
 

@@ -2,123 +2,294 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Scylla Hunter Report</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap">
 <style>
-  body { font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
-  h1 { border-bottom: 2px solid #333; padding-bottom: 0.3rem; }
-  h2 { margin-top: 2.5rem; border-bottom: 1px solid #ccc; padding-bottom: 0.2rem; }
-  h3 { margin-top: 1.5rem; font-size: 1.05rem; }
-  table { border-collapse: collapse; width: 100%; margin: 0.75rem 0 1.5rem; font-size: 0.9rem; }
-  th, td { border: 1px solid #ddd; padding: 0.4rem 0.6rem; text-align: left; vertical-align: top; }
-  th { background: #f5f5f5; }
-  code { background: #f0f0f0; padding: 0.1rem 0.3rem; border-radius: 3px; }
-  .muted { color: #666; }
+  :root{
+    --navy:#372950; --navy-deep:#111847; --navy-darker:#0e123d; --blue:#3156b4;
+    --teal:#56cde2; --purple:#b194c5;
+    --ink:#201a30; --muted:#6a627d; --line:#e3e0ea; --bg:#ffffff; --bg-soft:#f7f6fb;
+    --ok:#166b49; --ok-bg:#e4f7ee; --pending:#875707; --pending-bg:#fdf1dd;
+    --bad:#a82f40; --bad-bg:#fbe6e9; --off:#6a627d; --off-bg:#eeecf2;
+    --heading-font:"Space Grotesk","Segoe UI",system-ui,sans-serif;
+    --body-font:"Inter","Segoe UI",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    font-family:var(--body-font); color:var(--ink); background:var(--bg-soft); margin:0; padding:0;
+    line-height:1.55; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1040px; margin:0 auto; padding:0 1.5rem 3rem;}
+  h1,h2,h3{font-family:var(--heading-font); font-weight:600; color:var(--navy); letter-spacing:-0.01em;}
+  h2{font-size:1.15rem; margin:0 0 0.9rem; padding-bottom:0.5rem; border-bottom:2px solid var(--line);}
+  h3{font-size:1rem; margin:0;}
+  a{color:var(--blue);}
+  code{background:var(--bg-soft); border:1px solid var(--line); padding:0.08rem 0.35rem; border-radius:4px; font-size:0.85em;}
+  .muted{color:var(--muted);}
+  section{margin:2rem 0;}
+  .card-shell{background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:1.4rem 1.6rem; box-shadow:0 1px 2px rgba(17,24,71,0.04);}
+
+  /* ---- Header ---- */
+  header.brand{background:linear-gradient(135deg, var(--navy-deep) 0%, var(--blue) 100%); padding:2.2rem 1.5rem 2.6rem;}
+  header.brand .wrap{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:1rem; padding-bottom:0;}
+  header.brand .brand-id{display:flex; align-items:center; gap:0.85rem;}
+  header.brand img.logo{height:40px; width:auto; display:block; background:#fff; border-radius:8px; padding:4px 8px;}
+  header.brand .titles h1{color:#fff; margin:0; font-size:1.55rem;}
+  header.brand .titles p{color:#cfd6f5; margin:0.15rem 0 0; font-size:0.9rem;}
+  header.brand .meta{color:#cfd6f5; font-size:0.82rem; text-align:right;}
+  header.brand .meta strong{color:#fff;}
+
+  /* ---- Funnel bars ---- */
+  .funnels{display:grid; grid-template-columns:1fr 1fr; gap:1.4rem;}
+  @media (max-width:760px){ .funnels{grid-template-columns:1fr;} }
+  .funnel-row{display:grid; grid-template-columns:7.5rem 1fr 2.4rem; align-items:center; gap:0.6rem; margin:0.45rem 0; font-size:0.84rem;}
+  .funnel-row .label{color:var(--muted); text-transform:capitalize;}
+  .funnel-track{background:var(--bg-soft); border-radius:5px; height:0.65rem; overflow:hidden;}
+  .funnel-fill{height:100%; border-radius:5px; background:linear-gradient(90deg, var(--teal), var(--blue));}
+  .funnel-row .count{font-weight:600; text-align:right; font-variant-numeric:tabular-nums;}
+
+  /* ---- Stat cards ---- */
+  .stat-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:0.9rem;}
+  .stat{background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:0.9rem 1rem;}
+  .stat .n{font-family:var(--heading-font); font-size:1.5rem; font-weight:700; color:var(--navy);}
+  .stat .l{font-size:0.78rem; color:var(--muted); margin-top:0.15rem;}
+
+  /* ---- Pills ---- */
+  .pill{display:inline-block; font-size:0.72rem; font-weight:600; letter-spacing:0.02em; padding:0.2rem 0.55rem; border-radius:999px; text-transform:uppercase; white-space:nowrap;}
+  .pill-ok{background:var(--ok-bg); color:var(--ok);}
+  .pill-pending{background:var(--pending-bg); color:var(--pending);}
+  .pill-bad{background:var(--bad-bg); color:var(--bad);}
+  .pill-off{background:var(--off-bg); color:var(--off);}
+
+  /* ---- Lead cards ---- */
+  .lead-card{margin-bottom:1.1rem;}
+  .lead-card .lead-top{display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:0.5rem; margin-bottom:0.9rem;}
+  .lead-card .lead-name{font-family:var(--heading-font); font-size:1.08rem; font-weight:600; color:var(--navy);}
+  .lead-card .lead-sub{color:var(--muted); font-size:0.85rem;}
+  .score-bar{display:flex; height:0.6rem; border-radius:5px; overflow:hidden; margin:0.5rem 0 0.3rem; background:var(--bg-soft);}
+  .score-bar span{height:100%;}
+  .score-seg-evidence{background:var(--teal);} .score-seg-icp{background:var(--blue);} .score-seg-whynow{background:var(--purple);}
+  .score-legend{display:flex; gap:1rem; font-size:0.74rem; color:var(--muted); flex-wrap:wrap;}
+  .score-legend i{display:inline-block; width:0.6rem; height:0.6rem; border-radius:2px; margin-right:0.3rem; vertical-align:-1px;}
+  .message-block{border-top:1px solid var(--line); padding-top:0.9rem; margin-top:0.9rem;}
+  .message-block .mhead{display:flex; flex-wrap:wrap; align-items:center; gap:0.5rem; margin-bottom:0.4rem;}
+  .message-block .mhead .chan{font-weight:600; font-size:0.85rem;}
+  .message-block .reason{font-size:0.8rem; color:var(--muted); margin:0.3rem 0 0.6rem;}
+  .message-body{background:var(--bg-soft); border-left:3px solid var(--teal); border-radius:0 8px 8px 0; padding:0.75rem 1rem; font-size:0.88rem; white-space:pre-wrap;}
+  .message-subject{font-weight:600; font-size:0.85rem; margin-bottom:0.3rem;}
+  .evidence-list{margin:0.6rem 0 0; padding:0; list-style:none; font-size:0.78rem;}
+  .evidence-list li{padding:0.2rem 0; border-top:1px dashed var(--line);}
+  .evidence-list li:first-child{border-top:none;}
+
+  /* ---- Tables ---- */
+  table{border-collapse:collapse; width:100%; font-size:0.85rem;}
+  th,td{border-bottom:1px solid var(--line); padding:0.5rem 0.6rem; text-align:left; vertical-align:top;}
+  th{color:var(--muted); font-weight:600; font-size:0.74rem; text-transform:uppercase; letter-spacing:0.03em;}
+  tr:last-child td{border-bottom:none;}
+
+  footer{margin-top:3rem; padding-top:1.2rem; border-top:1px solid var(--line); font-size:0.78rem; color:var(--muted);}
+  footer .disclaimer{margin-top:0.6rem; font-style:italic;}
+
+  @media print{
+    body{background:#fff;}
+    header.brand{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+    .card-shell{box-shadow:none; border:1px solid #ccc;}
+    section{page-break-inside:avoid;}
+  }
 </style>
 </head>
 <body>
-<h1>Scylla Hunter Report</h1>
 
-<h2>Account funnel</h2>
-<table>
-  <tr><th>Stage</th><th>Count</th></tr>
-  {% for stage in account_funnel_stages %}
-  <tr><td>{{ stage }}</td><td>{{ data.account_funnel[stage] }}</td></tr>
-  {% endfor %}
-</table>
+{% macro status_pill(status) %}
+{%- set s = status | upper -%}
+{%- if s in ("SENT", "APPROVED", "ACCEPTED", "QUALIFIED") -%}
+<span class="pill pill-ok">{{ status }}</span>
+{%- elif s in ("REJECTED",) -%}
+<span class="pill pill-bad">{{ status }}</span>
+{%- elif s in ("SUPPRESSED", "DEPRIORITIZED") -%}
+<span class="pill pill-off">{{ status }}</span>
+{%- else -%}
+<span class="pill pill-pending">{{ status }}</span>
+{%- endif -%}
+{% endmacro %}
 
-<h2>Lead funnel</h2>
-<table>
-  <tr><th>Stage</th><th>Count</th></tr>
-  {% for stage in funnel_stages %}
-  <tr><td>{{ stage }}</td><td>{{ data.funnel[stage] }}</td></tr>
-  {% endfor %}
-</table>
+<header class="brand">
+  <div class="wrap">
+    <div class="brand-id">
+      <img class="logo" alt="ScyllaDB logo" src="data:image/png;base64,{{ logo_b64 }}">
+      <div class="titles">
+        <h1>Scylla Hunter Report</h1>
+        <p>DataStax / Cassandra displacement &middot; GTM pipeline, dry-run</p>
+      </div>
+    </div>
+    <div class="meta">
+      <strong>{{ data.run_meta.runs }}</strong> run(s) &middot; <strong>{{ data.run_meta.llm_calls }}</strong> LLM calls<br>
+      Models: {{ data.run_meta.models | join(", ") or "none" }}
+    </div>
+  </div>
+</header>
 
-<h2>Engagement</h2>
-<p>
-  Overall invite accept rate: <strong>{{ "%.0f%%" | format(data.engagement.overall_accept_rate * 100) if data.engagement.overall_accept_rate is not none else "n/a" }}</strong><br>
-  Warm emails sent: {{ data.engagement.warm_sent }} &middot; Cold emails sent: {{ data.engagement.cold_sent }}
-</p>
-<table>
-  <tr><th>Persona</th><th>Invited</th><th>Accepted</th><th>Accept rate</th></tr>
-  {% for persona in personas %}
-  {% set stats = data.engagement.by_persona[persona] %}
-  <tr>
-    <td>{{ persona }}</td><td>{{ stats.invited }}</td><td>{{ stats.accepted }}</td>
-    <td>{{ "%.0f%%" | format(stats.accept_rate * 100) if stats.accept_rate is not none else "n/a" }}</td>
-  </tr>
-  {% endfor %}
-</table>
+<div class="wrap">
 
-<h2>HITL summary</h2>
-<p>
-  Auto-approved: {{ data.hitl_summary.by_route.get("auto", 0) }} &middot;
-  Human-approved: {{ data.hitl_summary.by_route.get("human", 0) }}<br>
-  Edited: {{ data.hitl_summary.edits }} &middot; Rejected: {{ data.hitl_summary.rejections }}
-</p>
-<table>
-  <tr><th>Route code</th><th>Count</th></tr>
-  {% for code, count in data.hitl_summary.by_code.items() | sort %}
-  <tr><td><code>{{ code }}</code></td><td>{{ count }}</td></tr>
-  {% endfor %}
-</table>
+<section class="card-shell">
+  <h2>Funnel</h2>
+  <div class="funnels">
+    <div>
+      <h3 class="muted" style="font-size:0.78rem; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.6rem;">Account funnel</h3>
+      {% set amax = (data.account_funnel.values() | list | max) or 1 %}
+      {% for stage in account_funnel_stages %}
+      <div class="funnel-row">
+        <div class="label">{{ stage }}</div>
+        <div class="funnel-track"><div class="funnel-fill" style="width:{{ (data.account_funnel[stage] / amax * 100) | round(1) }}%"></div></div>
+        <div class="count">{{ data.account_funnel[stage] }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    <div>
+      <h3 class="muted" style="font-size:0.78rem; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.6rem;">Lead funnel</h3>
+      {% set lmax = (data.funnel.values() | list | max) or 1 %}
+      {% for stage in funnel_stages %}
+      <div class="funnel-row">
+        <div class="label">{{ stage }}</div>
+        <div class="funnel-track"><div class="funnel-fill" style="width:{{ (data.funnel[stage] / lmax * 100) | round(1) }}%"></div></div>
+        <div class="count">{{ data.funnel[stage] }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
 
-<h2>Accounts</h2>
-<table>
-  <tr><th>Account</th><th>Score</th><th>Status</th><th>Reason</th></tr>
-  {% for a in data.accounts %}
-  <tr><td>{{ a.name }}</td><td>{{ a.account_score }}</td><td>{{ a.status }}</td><td class="muted">{{ a.reason }}</td></tr>
+<section class="card-shell">
+  <h2>Engagement</h2>
+  <div class="stat-grid">
+    <div class="stat"><div class="n">{{ "%.0f%%" | format(data.engagement.overall_accept_rate * 100) if data.engagement.overall_accept_rate is not none else "n/a" }}</div><div class="l">Overall accept rate</div></div>
+    <div class="stat"><div class="n">{{ data.engagement.warm_sent }}</div><div class="l">Warm emails sent</div></div>
+    <div class="stat"><div class="n">{{ data.engagement.cold_sent }}</div><div class="l">Cold emails sent</div></div>
+    {% for persona in personas %}
+    {% set stats = data.engagement.by_persona[persona] %}
+    <div class="stat"><div class="n">{{ "%.0f%%" | format(stats.accept_rate * 100) if stats.accept_rate is not none else "n/a" }}</div><div class="l">{{ persona.replace("_"," ") }} accept rate ({{ stats.accepted }}/{{ stats.invited }})</div></div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="card-shell">
+  <h2>HITL summary</h2>
+  <div class="stat-grid">
+    <div class="stat"><div class="n">{{ data.hitl_summary.by_route.get("auto", 0) }}</div><div class="l">Auto-approved</div></div>
+    <div class="stat"><div class="n">{{ data.hitl_summary.by_route.get("human", 0) }}</div><div class="l">Human-approved</div></div>
+    <div class="stat"><div class="n">{{ data.hitl_summary.edits }}</div><div class="l">Edited</div></div>
+    <div class="stat"><div class="n">{{ data.hitl_summary.rejections }}</div><div class="l">Rejected</div></div>
+  </div>
+  <table style="margin-top:1rem;">
+    <tr><th>Route code</th><th>Count</th></tr>
+    {% for code, count in data.hitl_summary.by_code.items() | sort %}
+    <tr><td><code>{{ code }}</code></td><td>{{ count }}</td></tr>
+    {% endfor %}
+  </table>
+</section>
+
+<section>
+  <h2 style="border:none; margin-bottom:1rem;">Leads</h2>
+  {% for c in data.lead_cards %}
+  {% set lead = c.lead %}
+  {% set account = c.account %}
+  <div class="card-shell lead-card">
+    <div class="lead-top">
+      <div>
+        <span class="lead-name">{{ lead.first_name }} {{ lead.last_name }}</span>
+        <span class="lead-sub">&middot; {{ lead.persona.replace("_"," ") if lead.persona else "-" }} &middot; {{ account.name }}</span>
+      </div>
+      <div>{{ status_pill(lead.status) }}</div>
+    </div>
+
+    {% set total = (account.evidence_points + account.icp_points + account.why_now_points) or 1 %}
+    <div class="score-bar">
+      <span class="score-seg-evidence" style="width:{{ (account.evidence_points/total*100)|round(1) }}%"></span>
+      <span class="score-seg-icp" style="width:{{ (account.icp_points/total*100)|round(1) }}%"></span>
+      <span class="score-seg-whynow" style="width:{{ (account.why_now_points/total*100)|round(1) }}%"></span>
+    </div>
+    <div class="score-legend">
+      <span><i style="background:var(--teal)"></i>Evidence {{ "%.1f"|format(account.evidence_points) }}</span>
+      <span><i style="background:var(--blue)"></i>ICP {{ account.icp_points }}</span>
+      <span><i style="background:var(--purple)"></i>Why now {{ account.why_now_points }}</span>
+      <span>&middot; Account score <strong>{{ account.account_score }}</strong> ({{ account.status }})</span>
+    </div>
+    <p class="muted" style="font-size:0.8rem; margin:0.5rem 0 0;">{{ account.reason }}</p>
+
+    {% for m in c.messages %}
+    <div class="message-block">
+      <div class="mhead">
+        <span class="chan">{{ m.channel }}/{{ m.variant }}</span>
+        {{ status_pill(m.status) }}
+        <span class="muted" style="font-size:0.78rem;">route: {{ m.approval_route }}</span>
+      </div>
+      <p class="reason">{{ m.route_reason }}</p>
+      {% if m.subject %}<div class="message-subject">{{ m.subject }}</div>{% endif %}
+      <div class="message-body">{{ m.body }}</div>
+      {% if m.evidence %}
+      <ul class="evidence-list">
+        {% for e in m.evidence %}
+        <li><code>{{ e.id }}</code> {{ e.type }} ({{ e.confidence }}, {{ e.published_at }}) &middot; <a href="{{ e.source_url }}">{{ e.source_url }}</a></li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
   {% endfor %}
-</table>
+</section>
 
 {% if data.live_accounts %}
-<h2>Live discovered accounts</h2>
-<table>
-  <tr><th>Account</th><th>Source</th><th>Status</th><th>People query</th></tr>
-  {% for a in data.live_accounts %}
-  <tr><td>{{ a.name }}</td><td>{{ a.source }}</td><td>{{ a.status }}</td><td><code>{{ a.domain }}</code>, {{ a.target_title_count }} target titles</td></tr>
-  {% endfor %}
-</table>
+<section class="card-shell">
+  <h2>Live discovered accounts</h2>
+  <table>
+    <tr><th>Account</th><th>Source</th><th>Status</th><th>People query</th></tr>
+    {% for a in data.live_accounts %}
+    <tr><td>{{ a.name }}</td><td>{{ a.source }}</td><td>{{ status_pill(a.status) }}</td><td><code>{{ a.domain }}</code>, {{ a.target_title_count }} target titles</td></tr>
+    {% endfor %}
+  </table>
+</section>
 {% endif %}
 
-<h2>Leads</h2>
-<table>
-  <tr><th>Lead</th><th>Company</th><th>Persona</th><th>Status</th><th>Reason</th></tr>
-  {% for lead in data.leads %}
-  {% set account = accounts_by_id.get(lead.account_id) %}
-  <tr>
-    <td>{{ lead.first_name }} {{ lead.last_name }}</td>
-    <td>{{ account.name if account else lead.account_id }}</td>
-    <td>{{ lead.persona or "-" }}</td>
-    <td>{{ lead.status }}</td>
-    <td class="muted">{{ lead.reason }}</td>
-  </tr>
-  {% endfor %}
-</table>
+<section class="card-shell">
+  <h2>All accounts</h2>
+  <table>
+    <tr><th>Account</th><th>Score</th><th>Status</th><th>Reason</th></tr>
+    {% for a in data.accounts %}
+    <tr><td>{{ a.name }}</td><td>{{ a.account_score }}</td><td>{{ status_pill(a.status) }}</td><td class="muted">{{ a.reason }}</td></tr>
+    {% endfor %}
+  </table>
+</section>
 
-<h2>Sent messages</h2>
-{% for m in data.sent_messages %}
-<h3>msg#{{ m.message_id }} - {{ m.lead }} @ {{ m.account }} ({{ m.channel }}/{{ m.variant }}, route={{ m.approval_route }})</h3>
-{% if m.evidence %}
-<table>
-  <tr><th>Evidence</th><th>Type</th><th>Source</th><th>Date</th></tr>
-  {% for e in m.evidence %}
-  <tr><td>{{ e.id }}</td><td>{{ e.type }}</td><td>{{ e.source_url }}</td><td>{{ e.published_at }}</td></tr>
-  {% endfor %}
-</table>
-{% else %}
-<p class="muted">(no evidence cited)</p>
-{% endif %}
-{% endfor %}
+<section class="card-shell">
+  <h2>All leads</h2>
+  <table>
+    <tr><th>Lead</th><th>Company</th><th>Persona</th><th>Status</th><th>Reason</th></tr>
+    {% for lead in data.leads %}
+    {% set account = accounts_by_id.get(lead.account_id) %}
+    <tr>
+      <td>{{ lead.first_name }} {{ lead.last_name }}</td>
+      <td>{{ account.name if account else lead.account_id }}</td>
+      <td>{{ lead.persona or "-" }}</td>
+      <td>{{ status_pill(lead.status) }}</td>
+      <td class="muted">{{ lead.reason }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
 
-<h2>Run metadata</h2>
-<p>
-  Runs: {{ data.run_meta.runs }}<br>
-  LLM calls: {{ data.run_meta.llm_calls }} ({{ data.run_meta.tokens_in }} in / {{ data.run_meta.tokens_out }} out tokens)<br>
-  Prompt cache: {{ data.run_meta.cache_read_input_tokens }} tokens read from cache, {{ data.run_meta.cache_creation_input_tokens }} tokens written to cache (live mode only - 0/0 in replay mode)<br>
-  Models: {{ data.run_meta.models | join(", ") or "none" }}<br>
-  Prompt versions: {{ data.run_meta.prompt_versions | join(", ") or "none" }}
-</p>
+<footer>
+  <div>
+    Runs: {{ data.run_meta.runs }} &middot;
+    LLM calls: {{ data.run_meta.llm_calls }} ({{ data.run_meta.tokens_in }} in / {{ data.run_meta.tokens_out }} out tokens)<br>
+    Prompt cache: {{ data.run_meta.cache_read_input_tokens }} tokens read from cache, {{ data.run_meta.cache_creation_input_tokens }} tokens written to cache (live mode only - 0/0 in replay mode)<br>
+    Models: {{ data.run_meta.models | join(", ") or "none" }} &middot;
+    Prompt versions: {{ data.run_meta.prompt_versions | join(", ") or "none" }}
+  </div>
+  <div class="disclaimer">Prototype built for the ScyllaDB GTM Engineer home assignment - not an official ScyllaDB product.</div>
+</footer>
 
+</div>
 </body>
 </html>

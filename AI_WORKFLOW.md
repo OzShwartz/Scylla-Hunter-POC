@@ -35,6 +35,7 @@ This file is long - load the section you need rather than the whole file. The Hi
 | 23 | 10-12 | Part 4: full audit (code quality, security, cost) + safe auto-fixes |
 | 24 | 10-12 | AUDIT.md follow-through: the four deferred items, resolved |
 | 25 | 10-12 | Pre-submit cleanup: stale n8n doc claims, a real sent_at bug |
+| 26 | 10-12 | Steps 1-5: externally-fixed diagrams, PRD sync, branded report.html |
 
 ## Highlights: where human review caught what the automated checks missed
 
@@ -577,3 +578,22 @@ While staging the Phase 0 scaffold commit, `git status` showed `.env.example` (t
 **Result:** `pytest -q`: 158/158. `hunter eval`: 100%. `examples/` regenerated - the real quickstart's auto-dispatched cold email now shows `sent_at == created_at`.
 
 **Decisions made by the human:** none required - direct fixes to findings already raised in the pre-submit report.
+
+---
+
+## Entry #26 — 2026-10-12 — Steps 1-5: externally-fixed diagrams, PRD sync, branded report.html
+
+**Prompt (summarized):** (1) replace three diagrams with externally-regenerated versions (n8n removed, out/ paths, sensitive-content routing, real schema). (2) README's placeholder edit line must match `scripts/regenerate_examples.sh` exactly. (3) sync PRD §14's Mermaid diagrams to the new `.dot` files, fix remaining stale n8n lines, grep all docs for any n8n-shipped claim. (4) check every diagram's states/tables exist in code, every doc link resolves. (5) brand `report.html` from an attached logo and screenshot: extract palette/fonts, restyle with a funnel, status pills, one card per lead, HITL summary, run-metadata footer - one self-contained file, autoescape on, WCAG AA, print-friendly.
+
+**What Claude did:**
+- Steps 1-4: swapped the three diagram pairs, matched the README quickstart's edit line to the regenerate script, then read the new `.dot` files directly (not guessed) to sync PRD §14.3's ERD (added `hq`, `department`, both cache-token columns - all four were missing relative to the real `db.py` schema), §14.4's message lifecycle (the PENDING_APPROVAL transition now names all four real routing reasons, not just "score 60-79 or forced review"), and §14.5's infra diagram (n8n node replaced with "any HTTP orchestrator (not part of the PoC)"). Grepped every remaining `n8n` mention in README/PRD/CLAUDE.md by hand rather than assuming the earlier fixes caught everything - found and fixed two more (§2.2's addition row, the §12.2 "PoC + n8n" row) plus the §15 COULD row, which still described the original plan rather than the actual outcome. Verified every lead/message status and the 6 tables in the new diagrams against the real code (`hitl.py`'s route codes, `db.py`'s schema, `triggers.py`'s status strings) and every relative link/anchor in both docs against real headings and files - all consistent, nothing left to list.
+- Step 5: sampled exact colors from the provided logo and screenshot with Pillow rather than eyeballing them (`#372950` navy wordmark, `#111847`→`#3156b4` hero gradient, `#56cde2` teal mascot, `#b194c5` purple accent) - confirmed the logo's wordmark navy and the screenshot's header text navy match almost exactly (`#372950` vs `#392e52`), one consistent brand color. Picked Space Grotesk (headings) + Inter (body) from Google Fonts as the closest available match to the screenshot's geometric sans - noted as a visual judgment call, not a confirmed brand spec.
+- Added `build_lead_cards` to `report.py` (new, additive `ReportData.lead_cards` field - every QUALIFIED-or-later lead with its account's score breakdown, every drafted message, each message's real `hitl.route_info` reason, and its evidence with source links) so report.html needs no further DB access. `render_markdown` and every existing `ReportData` field are untouched - confirmed `examples/report.md` regenerates byte-identical to the previous commit.
+- Rewrote `templates/report.html.j2`: branded header with the logo (read from a new `templates/scylladb_logo.png` and base64-embedded into the single `report.html` output at render time, not left as an external file), funnel bars, a `status_pill` Jinja macro color-coding by status, score-breakdown bars per lead, a HITL summary, and the required footer disclaimer line.
+- Computed WCAG contrast ratios programmatically for every text/background pair rather than eyeballing - found the three status-pill colors fell short of AA for small text (3.09-4.37:1 against a 4.5:1 requirement) and darkened all three until each cleared 4.5:1 with margin.
+- Validated the generated HTML with Python's `HTMLParser` (tag balance - clean) and a brace-count check on the extracted `<style>` block (balanced) - the honest limit here is that no browser/screenshot tool exists in this environment, so the layout itself was never visually rendered, only structurally and numerically verified.
+- Added `test_html_report_contains_every_lead_and_the_logo` to `tests/test_report.py` (asserts every lead's name and the base64 logo `src` appear in the rendered HTML) alongside the existing counts-equal-DB test, which still passes unchanged.
+
+**Result:** `pytest -q`: 159/159. `hunter eval`: 100%. `examples/report.md` byte-identical to the prior commit; `examples/report.html` regenerated, self-contained, ~55KB.
+
+**Decisions made by the human:** none required for 1-4. For 5, the font choice and exact pill semantics (which statuses read as "pending" amber vs "off" gray) were judgment calls within the brief, not strict derivations from the screenshot - flagged as such rather than presented as certain.

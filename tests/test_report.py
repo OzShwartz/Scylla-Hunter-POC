@@ -163,3 +163,15 @@ def test_write_report_produces_markdown_and_html(full_funnel_conn):
     assert "# Scylla Hunter Report" in markdown_text
     assert "<title>Scylla Hunter Report</title>" in html_text
     assert "{{" not in html_text and "{%" not in html_text  # no unrendered Jinja
+
+
+def test_html_report_contains_every_lead_and_the_logo(full_funnel_conn):
+    conn, test_config = full_funnel_conn
+    report.write_report(conn, test_config, html=True)
+
+    from pathlib import Path
+    html_text = Path(test_config.runtime.report_html_path).read_text()
+
+    for lead in db.list_leads(conn):
+        assert f"{lead['first_name']} {lead['last_name']}" in html_text
+    assert 'src="data:image/png;base64,' in html_text
