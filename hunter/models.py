@@ -150,7 +150,6 @@ class MessagingSender(BaseModel):
 
 
 class MessagingConfig(BaseModel):
-    prompt_version: str
     sender: MessagingSender
     linkedin_invite_max_chars: int
     email_max_words: int
@@ -399,5 +398,6 @@ class Fixtures(BaseModel):
 
 def load_config(path: str | Path = "config.yaml") -> Config:
     with open(path) as f:
-        raw = yaml.load(f, Loader=_ConfigYAMLLoader)
+        # _ConfigYAMLLoader (above) subclasses yaml.SafeLoader - equivalent to yaml.safe_load().
+        raw = yaml.load(f, Loader=_ConfigYAMLLoader)  # nosec B506
     return Config.model_validate(raw)

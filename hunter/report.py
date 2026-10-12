@@ -266,7 +266,9 @@ def render_markdown(data: ReportData) -> str:
 def render_html(data: ReportData) -> str:
     from jinja2 import Environment, FileSystemLoader
 
-    env = Environment(loader=FileSystemLoader(str(Path(__file__).resolve().parent.parent / "templates")))
+    env = Environment(
+        loader=FileSystemLoader(str(Path(__file__).resolve().parent.parent / "templates")), autoescape=True
+    )
     template = env.get_template("report.html.j2")
     accounts_by_id = {a["id"]: a for a in data.accounts}
     return template.render(

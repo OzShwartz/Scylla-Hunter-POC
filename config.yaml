@@ -106,7 +106,11 @@ hitl:
 
 # ---------- Messaging ----------
 messaging:
-  prompt_version: "personalize.v7"
+  # The actual prompt version lives in prompts/personalize.md's own header - that's the
+  # single source of truth the replay key is built from (hunter/llm.py). A second copy
+  # here was dead config (nothing read it) that had drifted to v7 after the prompt was
+  # bumped to v8 - removed rather than kept in sync, since nothing can keep two sources
+  # of truth in sync automatically.
   sender: { name: "Oz", title: "GTM Engineer", company: "ScyllaDB" }
   linkedin_invite_max_chars: 280   # LinkedIn note limits vary by account type; keep a margin
   email_max_words: 120

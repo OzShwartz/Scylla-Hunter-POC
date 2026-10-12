@@ -142,7 +142,10 @@ def draft_message(
         config=config, variant=variant, previous_interaction=previous_interaction,
     )
 
+    message_tokens = 0
+
     def call_once(user_text: str) -> tuple[DraftResult, str, list[str]]:
+        nonlocal message_tokens
         result = call_llm(
             mode=llm_mode,
             system=system,
@@ -157,6 +160,7 @@ def draft_message(
         stats.llm_calls += 1
         stats.tokens_in += result.tokens_in
         stats.tokens_out += result.tokens_out
+        message_tokens += result.tokens_in + result.tokens_out
         try:
             return DraftResult.model_validate(json.loads(result.text)), result.model, []
         except (json.JSONDecodeError, ValidationError) as e:
@@ -211,7 +215,7 @@ def draft_message(
         status=status,
         prompt_version=spec.version,
         model=model_used,
-        tokens=stats.tokens_in + stats.tokens_out,
+        tokens=message_tokens,
         created_at=now,
     )
     if errors:

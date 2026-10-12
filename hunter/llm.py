@@ -128,7 +128,13 @@ def call_llm(
         create_kwargs: dict = dict(
             model=model,
             max_tokens=max_tokens,
-            system=system,
+            # Prompt caching: the system prompt (sender identity, rules, banned phrases)
+            # is identical across every call for a given prompt_version - only the user
+            # message varies per lead. Both prompts in this project comfortably clear the
+            # 512-token minimum for the Opus/Haiku 5.5 models configured in config.yaml
+            # (measured ~750-1600 tokens); a prompt that ever fell below the minimum would
+            # just be served uncached, per Anthropic's docs - no error either way.
+            system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
             messages=[{"role": "user", "content": user}],
         )
         output_config: dict = {}

@@ -1051,7 +1051,7 @@ scylla-hunter/
   prompts/             extract_signals.md  personalize.md
   data/                fixtures.json  llm_replay/  github_snapshot.json
   templates/           report.html.j2
-  n8n/                 hunter_triggers.json  screenshot.png
+  scripts/             regenerate_examples.sh
   examples/            report.md report.html outbox.jsonl run_log.txt hunter.db
   docs/diagrams/       Graphviz sources + PNGs of the §14 diagrams (for slides)
   tests/

@@ -87,7 +87,9 @@ def _github_api_get(path: str, *, token: str, params: dict | None = None) -> dic
         },
     )
     try:
-        with urllib.request.urlopen(request, timeout=15) as response:
+        # GITHUB_API_BASE (module constant, above) is a hardcoded https:// URL - never a
+        # variable or user-controlled scheme.
+        with urllib.request.urlopen(request, timeout=15) as response:  # nosec B310
             return json.loads(response.read())
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8", errors="replace")[:300]

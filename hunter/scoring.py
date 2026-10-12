@@ -249,7 +249,7 @@ def select_leads(conn: sqlite3.Connection, config: Config, now: datetime) -> Non
                 continue
             eligible.append((lead, persona))
 
-        def sort_key(item):
+        def sort_key(item: tuple[sqlite3.Row, str]) -> tuple[int, int, int]:
             lead, persona = item
             priority = (
                 config.personas.decision_maker.priority
