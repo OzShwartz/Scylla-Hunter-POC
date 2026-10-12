@@ -13,7 +13,7 @@ pip install -r requirements.txt
 python -m hunter reset
 python -m hunter run                 # 5 qualified leads; 2 invites auto-sent, 3 pending
 python -m hunter review              # see pending drafts with evidence and routing reason
-python -m hunter edit 5 --text "..." # FR-7: edit a pending draft; validators re-run, then it's approved
+python -m hunter edit 5 --text "Hi Dana, congrats on the move to Brightwave AI - I came across your previous work on fraud-scoring infrastructure and would be glad to connect."
 python -m hunter approve --all       # approves the remaining score-band ones; skips anything content-sensitive
 python -m hunter simulate --days 7   # 2 accept -> warm email; 3 don't -> cold email
 python -m hunter review              # msg#6, #9, #10 are tagged [SENSITIVE CONTENT]
