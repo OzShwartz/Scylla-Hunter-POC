@@ -791,6 +791,8 @@ erDiagram
         int llm_calls
         int tokens_in
         int tokens_out
+        int cache_creation_input_tokens
+        int cache_read_input_tokens
         datetime started_at
     }
     ACCOUNTS {
@@ -799,6 +801,7 @@ erDiagram
         text domain UK
         text industry
         int employees "nullable for live accounts"
+        text hq
         text source "fixtures or github"
         real evidence_points
         int icp_points
@@ -831,6 +834,7 @@ erDiagram
         text first_name
         text last_name
         text title
+        text department
         text persona
         json skills
         text linkedin_url
@@ -894,8 +898,8 @@ stateDiagram-v2
 stateDiagram-v2
     [*] --> DRAFTED
     DRAFTED --> DRAFTED: validator failed, one retry
-    DRAFTED --> APPROVED: auto route, score 80+ and checks pass
-    DRAFTED --> PENDING_APPROVAL: score 60-79 or forced review
+    DRAFTED --> APPROVED: auto route, score 80+, all checks pass, no sensitive content
+    DRAFTED --> PENDING_APPROVAL: score 60-79, OR sensitive content (competitor/IBM/renewal), OR validator failed after retry, OR no high-confidence evidence
     PENDING_APPROVAL --> APPROVED: approve or edit
     PENDING_APPROVAL --> REJECTED: reject with reason
     APPROVED --> SENT: dry-run dispatch to console and outbox
@@ -910,15 +914,16 @@ stateDiagram-v2
 ```mermaid
 flowchart LR
     subgraph LOCAL["Laptop: python -m hunter"]
-        CLI["CLI<br/>run, review, event,<br/>simulate, report, eval"]
+        CLI["CLI<br/>run, review, approve, edit,<br/>event, simulate, report, eval"]
         CORE["Pipeline core"]
-        CFG[/"config.yaml<br/>fixtures.json"/]
-        REPLAY[/"llm_replay/"/]
+        CFG[/"config.yaml<br/>data/fixtures.json"/]
+        REPLAY[/"data/llm_replay/<br/>(default)"/]
+        SNAP[/"data/github_snapshot.json<br/>(no-token fallback)"/]
         DB[("SQLite hunter.db")]
-        OUT[/"report.md, report.html,<br/>outbox.jsonl"/]
-        API["hunter serve<br/>POST /events, /tick"]
+        OUT[/"out/<br/>report.md, report.html,<br/>outbox.jsonl"/]
+        API["hunter serve (optional)<br/>POST /events, /tick"]
     end
-    N8N["n8n, local, optional<br/>webhook + schedule"]
+    ORCH["Any HTTP orchestrator<br/>(not part of the PoC)"]
     CLAUDE["Claude API<br/>live mode only"]
     GH["GitHub code search<br/>opt-in, token"]
 
@@ -926,10 +931,11 @@ flowchart LR
     CFG --> CORE
     CORE -->|default| REPLAY
     CORE -.->|live mode| CLAUDE
-    CORE -.->|github source, opt-in| GH
+    CORE -.->|--source github| GH
+    SNAP -.->|no token| CORE
     CORE --> DB
     DB --> OUT
-    N8N -.-> API
+    ORCH -.-> API
     API --> CORE
 ```
 
@@ -975,7 +981,7 @@ flowchart LR
 
 | Concern | PoC | Production |
 |---|---|---|
-| Triggers and time | CLI, simulated clock, optional local n8n | n8n schedules and webhooks |
+| Triggers and time | CLI, simulated clock, `hunter serve` for any HTTP orchestrator | n8n schedules and webhooks |
 | System of record | SQLite | Salesforce; Postgres for evidence and audit |
 | Sending | Dry-run to console and outbox | Human-approved; LinkedIn always manual |
 | Sources | Fixtures + GitHub | Real sources behind the same input shape |
@@ -996,7 +1002,7 @@ flowchart LR
 | **SHOULD** | HITL: routing, `review` / `approve` / `reject` / `edit` | 1 |
 | **SHOULD** | `report.html` | 1 |
 | **SHOULD** | GitHub live source | 2 |
-| **COULD** | `hunter serve` + n8n workflow export | 2.5 |
+| **COULD** | `hunter serve` built and tested; n8n workflow export attempted, then descoped (no unverified deliverables - see AI_WORKFLOW.md) | 2.5 |
 | **WON'T** | Apollo live calls, any UI, ScyllaDB backend, CRM sync, real sending, LinkedIn automation | — |
 
 **Build order** follows the table top to bottom.
