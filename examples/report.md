@@ -34,7 +34,7 @@
 ## HITL summary
 
 - Auto-approved: 3 · Human-approved: 7
-- Edited: 1 · Rejected: 0
+- Edited: 0 · Rejected: 0
 
 | Route code | Count |
 |---|---|
@@ -139,6 +139,6 @@
 ## Run metadata
 
 - Runs: 2
-- LLM calls: 20 (51124 in / 6636 out tokens)
+- LLM calls: 20 (51146 in / 6701 out tokens)
 - Models: claude-haiku-5-5, claude-opus-5-5
-- Prompt versions: extract_signals.v4, personalize.v7
+- Prompt versions: extract_signals.v4, personalize.v8

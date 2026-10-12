@@ -52,17 +52,17 @@ Real output from `examples/run_log.txt` - nothing in this section is invented.
 
 1. **Evidence.** `s01`, a customer-reference page, high confidence: *"Northwind Payments runs fraud scoring on Astra DB."*
 2. **Score breakdown.** `evidence=55.7, icp=25, why_now=15` → **account score 96** (≥ 80 auto-approve threshold).
-3. **Invite** (auto-approved, sent): *"Hi Maya, I'm Oz, GTM Engineer at ScyllaDB. I saw that Northwind Payments runs fraud scoring across multiple regions at 40k transactions per second, with tight read-latency requirements. I'd be glad to connect."*
+3. **Invite** (auto-approved, sent): *"Hi Maya, I came across Northwind Payments' fraud scoring work, serving single-digit millisecond reads across three regions at 40k transactions per second. I'm a GTM Engineer at ScyllaDB and talk with teams running multi-region, high-throughput workloads. Would be glad to connect."*
 4. **Accepted event** (`hunter simulate --days 7`, scripted day 2): lead status `INVITED` → `ACCEPTED`.
 5. **Warm email drafted** - the full text, unedited:
 
-   > Hi Maya, thanks for connecting.
+   > Hi Maya,
    >
-   > I saw that Northwind Payments runs fraud scoring on Astra DB, with single-digit millisecond reads across three regions at 40k transactions per second. That is a demanding profile to keep cost-efficient as volume grows.
+   > Thanks for connecting. I read that Northwind Payments runs fraud scoring on Astra DB, needing single-digit millisecond reads across three regions at 40k transactions per second.
    >
-   > ScyllaDB is built for that kind of workload. Higher throughput per node typically means fewer nodes and lower infrastructure cost. With DataStax now part of IBM, this may also be a reasonable moment to review options.
+   > ScyllaDB is built for that kind of workload. It delivers higher throughput per node, which typically means fewer nodes and lower infrastructure cost at the same latency targets. With DataStax now part of IBM, it may be a good moment to review options.
    >
-   > Would you be open to comparing notes on how your fraud-scoring cluster is sized today?
+   > Would you be open to a short comparison of what your fraud scoring workload could look like on ScyllaDB?
    >
    > Oz
    > GTM Engineer, ScyllaDB
@@ -73,7 +73,7 @@ Real output from `examples/run_log.txt` - nothing in this section is invented.
 
 ## How quality is measured
 
-`hunter eval` scores every run against fixture `_expected` values - never read by the pipeline itself, only by the evaluator: **32/32** extraction fields, **13/13** lead selections, **10/10** grounded messages. **152 automated tests** cover scoring, gates, validators, HITL routing, triggers, dispatch, the report, and the GitHub source. Grounding is enforced in code, not just prompted: every `evidence_quote` must be a verbatim substring of the source text, every cited evidence id must exist and belong to the lead's account, and every named person must actually appear in the source.
+`hunter eval` scores every run against fixture `_expected` values - never read by the pipeline itself, only by the evaluator: **32/32** extraction fields, **13/13** lead selections, **10/10** grounded messages. **157 automated tests** cover scoring, gates, validators, HITL routing, triggers, dispatch, the report, and the GitHub source. Grounding is enforced in code, not just prompted: every `evidence_quote` must be a verbatim substring of the source text, every cited evidence id must exist and belong to the lead's account, and every named person must actually appear in the source.
 
 ## Key decisions
 

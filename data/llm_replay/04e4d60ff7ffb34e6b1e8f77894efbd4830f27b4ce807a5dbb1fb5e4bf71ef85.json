@@ -1,7 +1,0 @@
-{
-  "text": "{\"subject\":null,\"body\":\"Hi Lior, I came across your talk on running 60 self-managed Apache Cassandra nodes behind the Kestrel Games leaderboard, including the GC and compaction tuning for tail latency. I'm Oz, GTM Engineer at ScyllaDB. Would be glad to connect.\",\"evidence_ids\":[\"s06\"],\"value_prop_ids\":[\"vp_latency\"],\"context_fact_ids\":[]}",
-  "tokens_in": 3000,
-  "tokens_out": 425,
-  "model": "claude-opus-5-5",
-  "prompt_version": "personalize.v7"
-}

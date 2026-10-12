@@ -1,7 +1,4 @@
-$ python -m hunter reset
 Database reset: hunter.db
-
-$ python -m hunter run
 Loaded 9 accounts, 10 raw signals, 13 people.
 Extraction: 10 LLM calls (mode=replay), 20089/1319 tokens in/out.
 Champion-move signals derived: 1 (champ_p12_a01)
@@ -12,20 +9,20 @@ Selected leads: 5/13
   p05 Joris de Vries (decision_maker, rank 1)
   p08 Lior Ben-David (practitioner, rank 1)
   p12 Dana Weiss (decision_maker, rank 1)
-Personalization: 5 LLM calls (mode=replay), 15384/2001 tokens in/out.
+Personalization: 5 LLM calls (mode=replay), 15391/1955 tokens in/out.
 ┌───────────────────────────────────────────────────────────────────────
 │ [DRY RUN] would send - linkedin/invite
 │ to:      Maya Rosen @ Northwind Payments <https://linkedin.example/in/maya-rosen>
 │ route:   auto
 │ text:
-│   Hi Maya, I'm Oz, GTM Engineer at ScyllaDB. I saw that Northwind Payments runs fraud scoring across multiple regions at 40k transactions per second, with tight read-latency requirements. I'd be glad to connect.
+│   Hi Maya, I came across Northwind Payments' fraud scoring work, serving single-digit millisecond reads across three regions at 40k transactions per second. I'm a GTM Engineer at ScyllaDB and talk with teams running multi-region, high-throughput workloads. Would be glad to connect.
 └───────────────────────────────────────────────────────────────────────
 ┌───────────────────────────────────────────────────────────────────────
 │ [DRY RUN] would send - linkedin/invite
 │ to:      Tom Hale @ Northwind Payments <https://linkedin.example/in/tom-hale>
 │ route:   auto
 │ text:
-│   Hi Tom, I noticed the Northwind Payments team is focusing on capacity planning and on cost and latency improvements across its multi-region data layer. I'm Oz, GTM Engineer at ScyllaDB, and I'd be glad to connect.
+│   Hi Tom, I noticed the Northwind Payments team is focused on capacity planning and on cost and latency improvements for its multi-region data layer alongside Kafka. I'm Oz, GTM Engineer at ScyllaDB. I'd be glad to connect.
 └───────────────────────────────────────────────────────────────────────
 
 2 message(s) dispatched (dry-run) - see outbox.jsonl
@@ -47,54 +44,45 @@ Drafted messages: 5
   msg#4 lead=p08 linkedin/invite route=human status=PENDING_APPROVAL
   msg#5 lead=p12 linkedin/invite route=human status=PENDING_APPROVAL
 
-$ python -m hunter review
-
 msg#3 | linkedin/invite | lead=p05 Joris de Vries (decision_maker) @ Lumen Logistics (score 76)
   reason: account score 76 is below the auto-approve threshold of 80
-  body: Hi Joris, I saw that the Lumen Logistics platform team is looking at modernising the cluster behind your shipment-tracking service, which writes 2B events a day. I'm on the GTM side at ScyllaDB and would like to connect with platform leaders working at that scale.
+  body: Hi Joris, I saw Lumen Logistics' shipment-tracking service writes 2B events/day, and your team is looking at ways to modernise that cluster and cut operational toil. I'm Oz, GTM Engineer at ScyllaDB. Would be glad to connect.
   evidence:
     s03 | job_post | 2026-08-05 | high | "Our shipment-tracking service writes 2B events/day to DataStax Enterprise 6.8."
 
 msg#4 | linkedin/invite | lead=p08 Lior Ben-David (practitioner) @ Kestrel Games (score 78)
   reason: account score 78 is below the auto-approve threshold of 80
-  body: Hi Lior, I came across your talk on running 60 self-managed Apache Cassandra nodes behind the Kestrel Games leaderboard, including the GC and compaction tuning for tail latency. I'm Oz, GTM Engineer at ScyllaDB. Would be glad to connect.
+  body: Hi Lior, I came across your talk on running Kestrel Games' leaderboard on 60 self-managed Cassandra nodes, especially the tail latency and GC/compaction tuning side. I'm Oz, GTM Engineer at ScyllaDB, and would like to connect.
   evidence:
     s06 | conference_talk | 2026-05-14 | high | "How we run 60 self-managed Apache Cassandra nodes"
 
 msg#5 | linkedin/invite | lead=p12 Dana Weiss (decision_maker) @ Brightwave AI (score 61)
   reason: account score 61 is below the auto-approve threshold of 80
-  body: Hi Dana, congrats on joining Brightwave AI as Head of Infrastructure. I came across your work on the fraud-scoring setup at Northwind Payments. I'm Oz, GTM Engineer at ScyllaDB, and I'd be glad to connect.
+  body: Hi Dana, congrats on joining Brightwave AI. I came across your past work on the fraud scoring setup at Northwind Payments and the data layer behind it. I'm Oz, GTM Engineer at ScyllaDB, and I'd be glad to connect with someone who has run that kind of workload.
   evidence:
     champ_p12_a01 | champion_move | 2026-07-01 | high | "Northwind Payments runs fraud scoring on Astra DB."
-
-$ python -m hunter edit 5 --text "Hi Dana, congrats on the move to Brightwave AI - I came across your previous work on fraud-scoring infrastructure and would be glad to connect."
-Edited msg#5: validators pass, approved.
-┌───────────────────────────────────────────────────────────────────────
-│ [DRY RUN] would send - linkedin/invite
-│ to:      Dana Weiss @ Brightwave AI <https://linkedin.example/in/dana-weiss>
-│ route:   human
-│ text:
-│   Hi Dana, congrats on the move to Brightwave AI - I came across your previous work on fraud-scoring infrastructure and would be glad to connect.
-└───────────────────────────────────────────────────────────────────────
-
-$ python -m hunter approve --all
-Approved 2 draft(s).
+Approved 3 draft(s).
 ┌───────────────────────────────────────────────────────────────────────
 │ [DRY RUN] would send - linkedin/invite
 │ to:      Joris de Vries @ Lumen Logistics <https://linkedin.example/in/joris-devries>
 │ route:   human
 │ text:
-│   Hi Joris, I saw that the Lumen Logistics platform team is looking at modernising the cluster behind your shipment-tracking service, which writes 2B events a day. I'm on the GTM side at ScyllaDB and would like to connect with platform leaders working at that scale.
+│   Hi Joris, I saw Lumen Logistics' shipment-tracking service writes 2B events/day, and your team is looking at ways to modernise that cluster and cut operational toil. I'm Oz, GTM Engineer at ScyllaDB. Would be glad to connect.
 └───────────────────────────────────────────────────────────────────────
 ┌───────────────────────────────────────────────────────────────────────
 │ [DRY RUN] would send - linkedin/invite
 │ to:      Lior Ben-David @ Kestrel Games <https://linkedin.example/in/lior-ben-david>
 │ route:   human
 │ text:
-│   Hi Lior, I came across your talk on running 60 self-managed Apache Cassandra nodes behind the Kestrel Games leaderboard, including the GC and compaction tuning for tail latency. I'm Oz, GTM Engineer at ScyllaDB. Would be glad to connect.
+│   Hi Lior, I came across your talk on running Kestrel Games' leaderboard on 60 self-managed Cassandra nodes, especially the tail latency and GC/compaction tuning side. I'm Oz, GTM Engineer at ScyllaDB, and would like to connect.
 └───────────────────────────────────────────────────────────────────────
-
-$ python -m hunter simulate --days 7
+┌───────────────────────────────────────────────────────────────────────
+│ [DRY RUN] would send - linkedin/invite
+│ to:      Dana Weiss @ Brightwave AI <https://linkedin.example/in/dana-weiss>
+│ route:   human
+│ text:
+│   Hi Dana, congrats on joining Brightwave AI. I came across your past work on the fraud scoring setup at Northwind Payments and the data layer behind it. I'm Oz, GTM Engineer at ScyllaDB, and I'd be glad to connect with someone who has run that kind of workload.
+└───────────────────────────────────────────────────────────────────────
 Simulated to day 7.
 Warm emails drafted (connection accepted): p01, p08
 Cold emails drafted (no accept by day 7): p02, p05, p12
@@ -102,15 +90,15 @@ Cold emails drafted (no accept by day 7): p02, p05, p12
 │ [DRY RUN] would send - email/cold
 │ to:      Tom Hale @ Northwind Payments <tom.hale@northwindpay.example>
 │ route:   auto
-│ subject: Predictable p99 for a multi-region data layer
+│ subject: p99 latency in a multi-region data layer
 │ text:
 │   Hi Tom,
 │   
-│   I see the Northwind Payments team is focused on capacity planning and on evaluating cost and latency improvements for its multi-region data layer, alongside the Kafka estate.
+│   Northwind Payments' team is focused on capacity planning and on evaluating cost and latency improvements for its multi-region data layer and Kafka estate.
 │   
-│   If tail latency is part of that evaluation, here is one data point: ScyllaDB uses a shard-per-core C++ architecture with no JVM garbage-collection pauses, so p99 latency stays predictable under load.
+│   If tail latency is part of that evaluation, ScyllaDB is built on a shard-per-core C++ architecture with no JVM garbage-collection pauses, so p99 latency stays predictable.
 │   
-│   Would a short technical write-up on how that architecture behaves be useful for your evaluation?
+│   Would you be open to comparing notes on p99 behavior as that evaluation takes shape?
 │   
 │   Oz
 │   GTM Engineer, ScyllaDB
@@ -120,18 +108,16 @@ Cold emails drafted (no accept by day 7): p02, p05, p12
 
 1 message(s) dispatched (dry-run) - see outbox.jsonl
 
-$ python -m hunter review
-
 msg#6 | email/warm | lead=p01 Maya Rosen (decision_maker) @ Northwind Payments (score 96)  [SENSITIVE CONTENT - excluded from `approve --all`]
   reason: forced: mentions a competitor product, the IBM/DataStax acquisition, or a renewal/contract - overrides account score and approval_mode (PRD §9.6)
-  subject: Fraud scoring throughput across three regions
-  body: Hi Maya, thanks for connecting.
+  subject: Fraud scoring reads across three regions
+  body: Hi Maya,
 
-I saw that Northwind Payments runs fraud scoring on Astra DB, with single-digit millisecond reads across three regions at 40k transactions per second. That is a demanding profile to keep cost-efficient as volume grows.
+Thanks for connecting. I read that Northwind Payments runs fraud scoring on Astra DB, needing single-digit millisecond reads across three regions at 40k transactions per second.
 
-ScyllaDB is built for that kind of workload. Higher throughput per node typically means fewer nodes and lower infrastructure cost. With DataStax now part of IBM, this may also be a reasonable moment to review options.
+ScyllaDB is built for that kind of workload. It delivers higher throughput per node, which typically means fewer nodes and lower infrastructure cost at the same latency targets. With DataStax now part of IBM, it may be a good moment to review options.
 
-Would you be open to comparing notes on how your fraud-scoring cluster is sized today?
+Would you be open to a short comparison of what your fraud scoring workload could look like on ScyllaDB?
 
 Oz
 GTM Engineer, ScyllaDB
@@ -142,14 +128,14 @@ Reply STOP to opt out.
 
 msg#7 | email/warm | lead=p08 Lior Ben-David (practitioner) @ Kestrel Games (score 78)
   reason: account score 78 is below the auto-approve threshold of 80
-  subject: Cassandra leaderboard p99 and GC pauses
+  subject: Tail latency on a self-managed Cassandra fleet
   body: Hi Lior,
 
-Thanks for connecting. Your talk on running 60 self-managed Apache Cassandra nodes for the Kestrel Games leaderboard cluster stood out, especially the tail latency and GC/compaction tuning side.
+Thanks for connecting. Your talk on running 60 self-managed Apache Cassandra nodes for the Kestrel Games leaderboard stuck with me, especially the work on tail latency and GC/compaction tuning.
 
-One thing relevant to that workload: ScyllaDB uses a shard-per-core C++ architecture with no JVM garbage-collection pauses, which is aimed at keeping p99 latency predictable. It speaks CQL, so it can be evaluated against an existing Cassandra data model.
+That tuning burden is the problem ScyllaDB's design targets: a shard-per-core C++ architecture with no JVM garbage-collection pauses, so p99 latency stays predictable without chasing GC settings.
 
-If it's useful, I'm happy to share how others have approached leaderboard-style workloads with it.
+If it's useful, I'm happy to share how that maps to a leaderboard-style workload like yours.
 
 Oz
 GTM Engineer, ScyllaDB
@@ -160,14 +146,14 @@ Reply STOP to opt out.
 
 msg#9 | email/cold | lead=p05 Joris de Vries (decision_maker) @ Lumen Logistics (score 76)  [SENSITIVE CONTENT - excluded from `approve --all`]
   reason: forced: mentions a competitor product, the IBM/DataStax acquisition, or a renewal/contract - overrides account score and approval_mode (PRD §9.6)
-  subject: Modernising the shipment-tracking cluster
+  subject: Shipment-tracking at 2B events/day
   body: Hi Joris,
 
-Lumen Logistics' shipment-tracking service writes 2B events/day to DataStax Enterprise 6.8, and your team appears focused on modernising that cluster and cutting operational toil. With DataStax offerings now moving under IBM, it could also be a good moment to review options.
+Lumen Logistics' shipment-tracking service writes 2B events/day to DataStax Enterprise 6.8, and your team is focused on modernising that cluster and reducing operational toil. With IBM's acquisition of DataStax complete, this may be a natural moment to review options.
 
-ScyllaDB provides migration tooling and support for moving live Cassandra/DSE workloads like that one.
+ScyllaDB delivers higher throughput per node, which typically means fewer nodes and lower infrastructure cost for a write-heavy workload like this one.
 
-Would it be useful if I sent a short overview of how that migration path works?
+Would a short comparison for a workload of that shape be useful?
 
 Oz
 GTM Engineer, ScyllaDB
@@ -178,14 +164,14 @@ Reply STOP to opt out.
 
 msg#10 | email/cold | lead=p12 Dana Weiss (decision_maker) @ Brightwave AI (score 61)  [SENSITIVE CONTENT - excluded from `approve --all`]
   reason: forced: mentions a competitor product, the IBM/DataStax acquisition, or a renewal/contract - overrides account score and approval_mode (PRD §9.6)
-  subject: Fraud-scoring workloads and throughput per node
+  subject: Throughput per node for Cassandra-style workloads
   body: Hi Dana,
 
-Your time at Northwind Payments, where fraud scoring ran on Astra DB, stood out to me. Congrats on the move to Brightwave AI.
+Congrats on joining Brightwave AI. In your time at Northwind Payments, fraud scoring ran on Astra DB, so you have seen that kind of workload up close.
 
-As you set infrastructure direction at Brightwave AI, one point may be useful for future latency-sensitive workloads. ScyllaDB delivers higher throughput per node, which typically means fewer nodes and lower infrastructure cost.
+One thing teams in that position often look at is throughput per node. ScyllaDB typically delivers more of it, which can mean fewer nodes and lower infrastructure cost.
 
-If that is relevant to what you are planning, would a short write-up on how teams size clusters for scoring-style workloads be helpful?
+If a short write-up on how that comparison usually plays out would be useful as you settle in at Brightwave, I'm happy to send one over.
 
 Oz
 GTM Engineer, ScyllaDB
@@ -193,8 +179,6 @@ GTM Engineer, ScyllaDB
 Reply STOP to opt out.
   evidence:
     champ_p12_a01 | champion_move | 2026-07-01 | high | "Northwind Payments runs fraud scoring on Astra DB."
-
-$ python -m hunter approve --all
 Approved 1 draft(s).
   Skipped msg#6: forced: mentions a competitor product, the IBM/DataStax acquisition, or a renewal/contract - overrides account score and approval_mode (PRD §9.6) - approve individually with `hunter approve 6`
   Skipped msg#9: forced: mentions a competitor product, the IBM/DataStax acquisition, or a renewal/contract - overrides account score and approval_mode (PRD §9.6) - approve individually with `hunter approve 9`
@@ -203,97 +187,80 @@ Approved 1 draft(s).
 │ [DRY RUN] would send - email/warm
 │ to:      Lior Ben-David @ Kestrel Games <lior.bd@kestrelgames.example>
 │ route:   human
-│ subject: Cassandra leaderboard p99 and GC pauses
+│ subject: Tail latency on a self-managed Cassandra fleet
 │ text:
 │   Hi Lior,
 │   
-│   Thanks for connecting. Your talk on running 60 self-managed Apache Cassandra nodes for the Kestrel Games leaderboard cluster stood out, especially the tail latency and GC/compaction tuning side.
+│   Thanks for connecting. Your talk on running 60 self-managed Apache Cassandra nodes for the Kestrel Games leaderboard stuck with me, especially the work on tail latency and GC/compaction tuning.
 │   
-│   One thing relevant to that workload: ScyllaDB uses a shard-per-core C++ architecture with no JVM garbage-collection pauses, which is aimed at keeping p99 latency predictable. It speaks CQL, so it can be evaluated against an existing Cassandra data model.
+│   That tuning burden is the problem ScyllaDB's design targets: a shard-per-core C++ architecture with no JVM garbage-collection pauses, so p99 latency stays predictable without chasing GC settings.
 │   
-│   If it's useful, I'm happy to share how others have approached leaderboard-style workloads with it.
+│   If it's useful, I'm happy to share how that maps to a leaderboard-style workload like yours.
 │   
 │   Oz
 │   GTM Engineer, ScyllaDB
 │   
 │   Reply STOP to opt out.
 └───────────────────────────────────────────────────────────────────────
-
-$ python -m hunter approve 6   # read above: Maya's warm email names Astra DB - legitimate evidence, approving
 Approved msg#6.
 ┌───────────────────────────────────────────────────────────────────────
 │ [DRY RUN] would send - email/warm
 │ to:      Maya Rosen @ Northwind Payments <maya.rosen@northwindpay.example>
 │ route:   human
-│ subject: Fraud scoring throughput across three regions
+│ subject: Fraud scoring reads across three regions
 │ text:
-│   Hi Maya, thanks for connecting.
+│   Hi Maya,
 │   
-│   I saw that Northwind Payments runs fraud scoring on Astra DB, with single-digit millisecond reads across three regions at 40k transactions per second. That is a demanding profile to keep cost-efficient as volume grows.
+│   Thanks for connecting. I read that Northwind Payments runs fraud scoring on Astra DB, needing single-digit millisecond reads across three regions at 40k transactions per second.
 │   
-│   ScyllaDB is built for that kind of workload. Higher throughput per node typically means fewer nodes and lower infrastructure cost. With DataStax now part of IBM, this may also be a reasonable moment to review options.
+│   ScyllaDB is built for that kind of workload. It delivers higher throughput per node, which typically means fewer nodes and lower infrastructure cost at the same latency targets. With DataStax now part of IBM, it may be a good moment to review options.
 │   
-│   Would you be open to comparing notes on how your fraud-scoring cluster is sized today?
+│   Would you be open to a short comparison of what your fraud scoring workload could look like on ScyllaDB?
 │   
 │   Oz
 │   GTM Engineer, ScyllaDB
 │   
 │   Reply STOP to opt out.
 └───────────────────────────────────────────────────────────────────────
-
-$ python -m hunter approve 9   # Joris's cold email - DSE + IBM acquisition, one clause, reviewed
 Approved msg#9.
 ┌───────────────────────────────────────────────────────────────────────
 │ [DRY RUN] would send - email/cold
 │ to:      Joris de Vries @ Lumen Logistics <joris.devries@lumenlogistics.example>
 │ route:   human
-│ subject: Modernising the shipment-tracking cluster
+│ subject: Shipment-tracking at 2B events/day
 │ text:
 │   Hi Joris,
 │   
-│   Lumen Logistics' shipment-tracking service writes 2B events/day to DataStax Enterprise 6.8, and your team appears focused on modernising that cluster and cutting operational toil. With DataStax offerings now moving under IBM, it could also be a good moment to review options.
+│   Lumen Logistics' shipment-tracking service writes 2B events/day to DataStax Enterprise 6.8, and your team is focused on modernising that cluster and reducing operational toil. With IBM's acquisition of DataStax complete, this may be a natural moment to review options.
 │   
-│   ScyllaDB provides migration tooling and support for moving live Cassandra/DSE workloads like that one.
+│   ScyllaDB delivers higher throughput per node, which typically means fewer nodes and lower infrastructure cost for a write-heavy workload like this one.
 │   
-│   Would it be useful if I sent a short overview of how that migration path works?
+│   Would a short comparison for a workload of that shape be useful?
 │   
 │   Oz
 │   GTM Engineer, ScyllaDB
 │   
 │   Reply STOP to opt out.
 └───────────────────────────────────────────────────────────────────────
-
-$ python -m hunter approve 10  # Dana's cold email - champion-move evidence, reviewed
 Approved msg#10.
 ┌───────────────────────────────────────────────────────────────────────
 │ [DRY RUN] would send - email/cold
 │ to:      Dana Weiss @ Brightwave AI <dana.weiss@brightwave.example>
 │ route:   human
-│ subject: Fraud-scoring workloads and throughput per node
+│ subject: Throughput per node for Cassandra-style workloads
 │ text:
 │   Hi Dana,
 │   
-│   Your time at Northwind Payments, where fraud scoring ran on Astra DB, stood out to me. Congrats on the move to Brightwave AI.
+│   Congrats on joining Brightwave AI. In your time at Northwind Payments, fraud scoring ran on Astra DB, so you have seen that kind of workload up close.
 │   
-│   As you set infrastructure direction at Brightwave AI, one point may be useful for future latency-sensitive workloads. ScyllaDB delivers higher throughput per node, which typically means fewer nodes and lower infrastructure cost.
+│   One thing teams in that position often look at is throughput per node. ScyllaDB typically delivers more of it, which can mean fewer nodes and lower infrastructure cost.
 │   
-│   If that is relevant to what you are planning, would a short write-up on how teams size clusters for scoring-style workloads be helpful?
+│   If a short write-up on how that comparison usually plays out would be useful as you settle in at Brightwave, I'm happy to send one over.
 │   
 │   Oz
 │   GTM Engineer, ScyllaDB
 │   
 │   Reply STOP to opt out.
 └───────────────────────────────────────────────────────────────────────
-
-$ python -m hunter report --html
 Wrote examples/report.md
 Wrote examples/report.html
-
-$ python -m hunter eval
-=== Scylla Hunter eval scorecard ===
-Extraction accuracy:   32/32 (100%)
-False-positive (s08): rejected correctly
-Selection accuracy:    13/13 (100%)
-Grounding rate:        10/10 (100%)
-
-VERDICT: PASS

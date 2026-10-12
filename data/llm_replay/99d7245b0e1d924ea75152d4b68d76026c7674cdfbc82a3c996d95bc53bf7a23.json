@@ -1,7 +1,0 @@
-{
-  "text": "{\"subject\":\"Fraud-scoring workloads and throughput per node\",\"body\":\"Hi Dana,\\n\\nYour time at Northwind Payments, where fraud scoring ran on Astra DB, stood out to me. Congrats on the move to Brightwave AI.\\n\\nAs you set infrastructure direction at Brightwave AI, one point may be useful for future latency-sensitive workloads. ScyllaDB delivers higher throughput per node, which typically means fewer nodes and lower infrastructure cost.\\n\\nIf that is relevant to what you are planning, would a short write-up on how teams size clusters for scoring-style workloads be helpful?\\n\\nOz\\nGTM Engineer, ScyllaDB\\n\\nReply STOP to opt out.\",\"evidence_ids\":[\"champ_p12_a01\"],\"value_prop_ids\":[\"vp_tco\"],\"context_fact_ids\":[]}",
-  "tokens_in": 3039,
-  "tokens_out": 770,
-  "model": "claude-opus-5-5",
-  "prompt_version": "personalize.v7"
-}
