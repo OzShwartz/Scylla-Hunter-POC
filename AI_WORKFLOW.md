@@ -477,3 +477,16 @@ While staging the Phase 0 scaffold commit, `git status` showed `.env.example` (t
 - Ran it in replay mode (no API key) to regenerate `examples/` for real, confirmed `out/` appeared git-ignored and `git status` stayed clean for it, then ran `pytest -q` (157/157) and `hunter eval` (32/32, 13/13, 10/10) against the fresh state.
 
 **Decisions made by the human:** none required - a structural fix to a problem (examples/ getting dirtied by routine runs) that had already surfaced and been manually patched several times earlier in the build.
+
+---
+
+## Entry #22 — 2026-10-12 — Part 3c: PRD §9.4 table didn't match the real output
+
+**Prompt (summarized):** pre-submission audit, Part 3c. PRD §9.4's worked-results table displays Kestrel Games' evidence sub-score as 43.4 and gives Pinecrest Analytics a scored row (evidence 0, ICP 10, why now 0, score 10) - align both with what the code actually produces.
+
+**What Claude did:**
+- Queried the real `accounts` table directly rather than trusting the prose: Kestrel's `evidence_points` is `43.33886...`, which the code's own `f"{evidence_points:.1f}"` formatting (cited by §9.4's own footnote as the ground truth) renders as **43.3**, not 43.4 - a one-digit transcription error in the table.
+- Pinecrest is a bigger miss: its real row is `icp_points=0, why_now_points=0, account_score=0, status=REJECTED, reason='Gate: no technology evidence'` - it's rejected by the no-evidence gate *before* ICP/why-now scoring ever runs, exactly like Sprocket Labs, Quanta Retail and DataStax three rows below it (which all correctly show `—` for Evidence/ICP/Why now/Score). Pinecrest's row was the one exception showing fabricated non-zero numbers (10/10) for columns the code never actually populates for a gated account. Changed it to `—` across the board, matching its true siblings' convention, and reworded the Result cell to say *why* ("gated before scoring") rather than just restating REJECTED.
+- Grepped the rest of PRD.md and tests/ for any other reference to the old `43.4` or Pinecrest's old numbers - none found; the fix was contained to the one table row plus the one cell.
+
+**Decisions made by the human:** none required - a direct "make the doc match the code" fix with an unambiguous right answer once the real DB values were queried.
