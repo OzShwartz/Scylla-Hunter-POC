@@ -18,8 +18,27 @@ python -m hunter approve --all       # approves the remaining score-band ones; s
 python -m hunter simulate --days 7   # 2 accept -> warm email; 3 don't -> cold email
 python -m hunter review              # msg#6, #9, #10 are tagged [SENSITIVE CONTENT]
 python -m hunter approve --all       # skips #6/#9/#10 again, with their ids
-python -m hunter approve 6 && python -m hunter approve 9 && python -m hunter approve 10
+python -m hunter approve 6 9 10
 python -m hunter report --html       # out/report.md and out/report.html
+```
+
+**Windows (PowerShell):** the same commands, just venv activation differs.
+
+```powershell
+git clone https://github.com/OzShwartz/Scylla-Hunter-POC.git; cd Scylla-Hunter-POC
+python -m venv .venv; .venv\Scripts\Activate.ps1
+# If activation is blocked by the execution policy: Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+pip install -r requirements.txt
+python -m hunter reset
+python -m hunter run
+python -m hunter review
+python -m hunter edit 5 --text "Hi Dana, congrats on the move to Brightwave AI - I came across your previous work on fraud-scoring infrastructure and would be glad to connect."
+python -m hunter approve --all
+python -m hunter simulate --days 7
+python -m hunter review
+python -m hunter approve --all
+python -m hunter approve 6 9 10
+python -m hunter report --html
 ```
 
 These message ids are deterministic - replay mode makes the same drafts every time, in the same order. Everything above runs against a committed **replay set** (`data/llm_replay/`): real Claude responses recorded once, replayed deterministically. `--llm live` plus `ANTHROPIC_API_KEY` in `.env` re-records them; the reviewer never needs a key.

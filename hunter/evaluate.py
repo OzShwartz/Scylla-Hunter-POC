@@ -66,7 +66,7 @@ class ScoreCard:
 
 
 def _load_raw_fixtures(path: str | Path = "data/fixtures.json") -> dict:
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 

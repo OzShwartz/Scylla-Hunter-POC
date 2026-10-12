@@ -203,8 +203,10 @@ Approved 1 draft(s).
 │   
 │   Reply STOP to opt out.
 └───────────────────────────────────────────────────────────────────────
-$ python -m hunter approve 6
+$ python -m hunter approve 6 9 10
 Approved msg#6.
+Approved msg#9.
+Approved msg#10.
 ┌───────────────────────────────────────────────────────────────────────
 │ [DRY RUN] would send - email/warm
 │ to:      Maya Rosen @ Northwind Payments <maya.rosen@northwindpay.example>
@@ -218,8 +220,6 @@ Approved msg#6.
 │   
 │   Reply STOP to opt out.
 └───────────────────────────────────────────────────────────────────────
-$ python -m hunter approve 9
-Approved msg#9.
 ┌───────────────────────────────────────────────────────────────────────
 │ [DRY RUN] would send - email/cold
 │ to:      Joris de Vries @ Lumen Logistics <joris.devries@lumenlogistics.example>
@@ -239,8 +239,6 @@ Approved msg#9.
 │   
 │   Reply STOP to opt out.
 └───────────────────────────────────────────────────────────────────────
-$ python -m hunter approve 10
-Approved msg#10.
 ┌───────────────────────────────────────────────────────────────────────
 │ [DRY RUN] would send - email/cold
 │ to:      Dana Weiss @ Brightwave AI <dana.weiss@brightwave.example>

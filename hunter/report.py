@@ -497,11 +497,11 @@ def write_report(conn: sqlite3.Connection, config: Config, *, html: bool = False
 
     report_path = Path(config.runtime.report_path)
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text(render_markdown(data))
+    report_path.write_text(render_markdown(data), encoding="utf-8")
 
     if html:
         html_path = Path(config.runtime.report_html_path)
         html_path.parent.mkdir(parents=True, exist_ok=True)
-        html_path.write_text(render_html(data))
+        html_path.write_text(render_html(data), encoding="utf-8")
 
     return data

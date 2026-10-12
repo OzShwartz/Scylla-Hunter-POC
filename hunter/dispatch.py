@@ -83,7 +83,7 @@ def dispatch_approved(
             "evidence_ids": json.loads(message["evidence_ids"]),
             "sent_at": now.isoformat(),
         }
-        with open(outbox_path, "a") as f:
+        with open(outbox_path, "a", encoding="utf-8") as f:
             f.write(json.dumps(record) + "\n")
 
         db.update_message_status(conn, message["id"], status="SENT", sent_at=now)

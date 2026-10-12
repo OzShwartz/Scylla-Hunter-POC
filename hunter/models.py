@@ -397,7 +397,7 @@ class Fixtures(BaseModel):
 
 
 def load_config(path: str | Path = "config.yaml") -> Config:
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         # _ConfigYAMLLoader (above) subclasses yaml.SafeLoader - equivalent to yaml.safe_load().
         raw = yaml.load(f, Loader=_ConfigYAMLLoader)  # nosec B506
     return Config.model_validate(raw)

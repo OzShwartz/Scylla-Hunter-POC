@@ -35,7 +35,7 @@ EXCLUDED_STALE_PATH = "excluded_stale_path"
 
 
 def load_fixtures(path: str = "data/fixtures.json") -> Fixtures:
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         raw = json.load(f)
     return Fixtures.model_validate(raw)
 
@@ -136,12 +136,12 @@ def search_github_code(config: GitHubSourceConfig, *, token: str) -> list[Matche
 def save_snapshot(matches: list[MatchedRepo], *, as_of: date, path: str | Path = SNAPSHOT_PATH) -> None:
     """Writes the dated, committed fallback - org/repo-level facts only."""
     payload = {"as_of": as_of.isoformat(), "matches": [m.to_dict() for m in matches]}
-    Path(path).write_text(json.dumps(payload, indent=2) + "\n")
+    Path(path).write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
 def load_snapshot(path: str | Path = SNAPSHOT_PATH) -> tuple[list[MatchedRepo], str]:
     """Returns (matches, as_of) from the committed fallback."""
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         raw = json.load(f)
     return [MatchedRepo.from_dict(m) for m in raw["matches"]], raw["as_of"]
 

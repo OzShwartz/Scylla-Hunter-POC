@@ -194,14 +194,15 @@ def review() -> None:
 
 @app.command()
 def approve(
-    message_id: int = typer.Argument(None),
+    message_ids: list[int] = typer.Argument(None, help="One or more message ids"),
     approve_all: bool = typer.Option(False, "--all", help="Approve every score-band pending draft"),
     include_sensitive: bool = typer.Option(
         False, "--include-sensitive",
         help="With --all, also approve content-sensitive drafts (competitor/IBM/renewal mentions)",
     ),
 ) -> None:
-    """FR-7: approve one pending draft, or every pending draft with --all.
+    """FR-7: approve one or more pending drafts (e.g. `approve 6 9 10`), or
+    every pending draft with --all.
 
     --all only bulk-approves drafts pending on account score alone. A draft
     forced to review for a content reason (sensitive content, a validator
@@ -221,36 +222,38 @@ def approve(
         dispatch.dispatch_approved(conn, config, run_id=None, now=datetime.now())
         conn.close()
         return
-    if message_id is None:
+    if not message_ids:
         conn.close()
-        typer.echo("Error: pass a message id or --all", err=True)
+        typer.echo("Error: pass one or more message ids, or --all", err=True)
         raise typer.Exit(code=1)
-    try:
-        hitl.approve(conn, message_id, now=datetime.now())
-    except ValueError as e:
-        conn.close()
-        typer.echo(f"Error: {e}", err=True)
-        raise typer.Exit(code=1) from None
-    typer.echo(f"Approved msg#{message_id}.")
+    for message_id in message_ids:
+        try:
+            hitl.approve(conn, message_id, now=datetime.now())
+        except ValueError as e:
+            conn.close()
+            typer.echo(f"Error: {e}", err=True)
+            raise typer.Exit(code=1) from None
+        typer.echo(f"Approved msg#{message_id}.")
     dispatch.dispatch_approved(conn, config, run_id=None, now=datetime.now())
     conn.close()
 
 
 @app.command()
 def reject(
-    message_id: int = typer.Argument(...),
-    reason: str = typer.Option(..., "--reason", help="Why this draft is rejected"),
+    message_ids: list[int] = typer.Argument(..., help="One or more message ids"),
+    reason: str = typer.Option(..., "--reason", help="Why these drafts are rejected"),
 ) -> None:
-    """FR-7: reject one pending draft with a reason."""
+    """FR-7: reject one or more pending drafts with the same reason."""
     config = load_config()
     conn = db.connect(config.runtime.db_path)
-    try:
-        hitl.reject(conn, message_id, reason=reason, now=datetime.now())
-    except ValueError as e:
-        conn.close()
-        typer.echo(f"Error: {e}", err=True)
-        raise typer.Exit(code=1) from None
-    typer.echo(f"Rejected msg#{message_id}: {reason}")
+    for message_id in message_ids:
+        try:
+            hitl.reject(conn, message_id, reason=reason, now=datetime.now())
+        except ValueError as e:
+            conn.close()
+            typer.echo(f"Error: {e}", err=True)
+            raise typer.Exit(code=1) from None
+        typer.echo(f"Rejected msg#{message_id}: {reason}")
     conn.close()
 
 

@@ -35,9 +35,7 @@ run python -m hunter approve --all
 run python -m hunter simulate --days 7
 run python -m hunter review
 run python -m hunter approve --all
-run python -m hunter approve 6
-run python -m hunter approve 9
-run python -m hunter approve 10
+run python -m hunter approve 6 9 10
 run python -m hunter report --html
 
 cp "$LOG" examples/run_log.txt

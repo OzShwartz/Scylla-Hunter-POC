@@ -30,7 +30,7 @@ def load_prompt_spec(path: str | Path) -> PromptSpec:
     prompt` section, and a `# User message template` section whose content
     is the first fenced code block that follows it.
     """
-    text = Path(path).read_text()
+    text = Path(path).read_text(encoding="utf-8")
 
     version_match = re.search(r"^prompt_version:\s*(.+)$", text, re.MULTILINE)
     if not version_match:
@@ -100,7 +100,7 @@ def call_llm(
     # for blindly re-calling everything (which would also churn replay files with
     # harmless but noisy wording variance on every re-run).
     if path.exists():
-        cached = json.loads(path.read_text())
+        cached = json.loads(path.read_text(encoding="utf-8"))
         return LLMResult(
             text=cached["text"],
             tokens_in=cached["tokens_in"],
@@ -179,7 +179,8 @@ def call_llm(
                     "cache_read_input_tokens": result.cache_read_input_tokens,
                 },
                 indent=2,
-            )
+            ),
+            encoding="utf-8",
         )
         return result
 
