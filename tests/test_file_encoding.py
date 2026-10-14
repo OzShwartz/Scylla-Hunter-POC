@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import ast
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -53,7 +54,7 @@ def test_every_text_file_io_call_pins_utf8_encoding():
     assert not offenders, "Missing encoding=\"utf-8\" on:\n" + "\n".join(offenders)
 
 
-def test_hunter_run_does_not_crash_when_stdout_is_cp1252():
+def test_hunter_run_does_not_crash_when_stdout_is_cp1252(tmp_path):
     """On Windows, redirecting stdout (a pipe, a file, an IDE output panel) makes
     Python fall back to the console code page (cp1252) unless PYTHONUTF8 forces
     UTF-8 - which then crashes on the box-drawing characters in every dry-run
@@ -61,16 +62,26 @@ def test_hunter_run_does_not_crash_when_stdout_is_cp1252():
     PYTHONIOENCODING is honored cross-platform, so this reproduces the exact
     failure mode on any OS, not just Windows - `hunter/cli.py`'s top-level
     stdout/stderr .reconfigure(encoding="utf-8") is what prevents it.
+
+    Runs in an isolated tmp_path, never the real repo root: config.yaml's own
+    paths (hunter.db, out/outbox.jsonl, ...) are relative, so a real subprocess
+    run from the repo root would reset and overwrite the reviewer's actual
+    hunter.db/out/ - caught for real on a reviewer's machine once already.
     """
+    shutil.copy2(REPO_ROOT / "config.yaml", tmp_path / "config.yaml")
+    shutil.copytree(REPO_ROOT / "data", tmp_path / "data")
+    shutil.copytree(REPO_ROOT / "prompts", tmp_path / "prompts")
+
     env = os.environ.copy()
     env.pop("PYTHONUTF8", None)
     env.pop("ANTHROPIC_API_KEY", None)
     env["PYTHONIOENCODING"] = "cp1252"
+    env["PYTHONPATH"] = str(REPO_ROOT)  # so `python -m hunter` still finds the package
 
     def run(*args: str) -> subprocess.CompletedProcess:
         return subprocess.run(
             [sys.executable, "-m", "hunter", *args],
-            cwd=REPO_ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            cwd=tmp_path, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             text=True, encoding="utf-8", errors="replace",
         )
 

@@ -38,6 +38,7 @@ This file is long - load the section you need rather than the whole file. The Hi
 | 26 | 10-12 | Steps 1-5: externally-fixed diagrams, PRD sync, branded report.html |
 | 27 | 10-12 | Report polish: Title/LinkedIn, score legend, route labels, sequence timeline, README assumptions |
 | 28 | 10-14 | Windows reality check: cp1252 stdout crash found and fixed |
+| 29 | 10-14 | Isolated the new subprocess test from the reviewer's real hunter.db/out/ |
 
 ## Highlights: where human review caught what the automated checks missed
 
@@ -637,3 +638,17 @@ While staging the Phase 0 scaffold commit, `git status` showed `.env.example` (t
 **Result:** `pytest -q`: 163/163. `hunter eval`: PASS. Stash-then-restore check: FAIL without the fix (confirmed, exact error match), PASS with it (confirmed).
 
 **Decisions made by the human:** none required - a direct bug report with a prescribed fix, verified rather than assumed at every step (entry point, reproduction, stash/restore, final diff).
+
+---
+
+## Entry #29 — 2026-10-14 — Isolated the new subprocess test from the reviewer's real hunter.db/out/
+
+**Prompt (summarized):** the Windows session found that running `pytest -q` overwrote `out/outbox.jsonl` (6 lines down to 2) - Entry #28's new subprocess test ran `hunter reset` + `hunter run` with `cwd=REPO_ROOT`, so it used `config.yaml`'s own relative paths (`hunter.db`, `out/outbox.jsonl`) and reset the reviewer's real local state. Fix it so the test runs fully isolated (no pipeline code changes), then prove it by hashing `out/*` and `hunter.db` before and after a full `pytest -q` run - once, not as a permanent test.
+
+**What Claude did:**
+- Moved the subprocess test to `cwd=tmp_path` (pytest's own isolated directory) instead of the repo root, copying only what `reset`+`run` (replay mode, fixtures source) actually read at runtime: `config.yaml`, `data/` (fixtures + the replay set), `prompts/`. Nothing from `hunter/` itself needed copying - `env["PYTHONPATH"] = str(REPO_ROOT)` lets `python -m hunter` still find the real package while every relative path `config.yaml` itself defines (`hunter.db`, `out/outbox.jsonl`, ...) now resolves inside `tmp_path`.
+- Did the requested one-time proof rather than trusting the fix by inspection: ran `reset` → `run` → `simulate --days 7` in the real repo to set up reviewer-like state, hashed `hunter.db` and every file under `out/` (sha256), ran the full `pytest -q` (163 passed), hashed again - all four hashes identical before and after.
+
+**Result:** `pytest -q`: 163/163. `hunter eval`: PASS. Hash comparison: identical before/after (confirmed, not assumed).
+
+**Decisions made by the human:** none required - a direct, well-diagnosed bug report with a prescribed fix shape.
