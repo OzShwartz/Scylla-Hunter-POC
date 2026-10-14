@@ -261,3 +261,4 @@ Approved msg#10.
 $ python -m hunter report --html
 Wrote out/report.md
 Wrote out/report.html
+Open in browser: out/report.html

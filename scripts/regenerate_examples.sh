@@ -38,6 +38,12 @@ run python -m hunter approve --all
 run python -m hunter approve 6 9 10
 run python -m hunter report --html
 
+# The "Open in browser: file://..." line embeds this machine's absolute path -
+# not reproducible on anyone else's checkout. sed -i.bak (not bare -i) is the
+# one in-place syntax BSD sed (macOS) and GNU sed (Linux) both accept.
+sed -i.bak -E 's#Open in browser: file://.*#Open in browser: out/report.html#' "$LOG"
+rm -f "$LOG.bak"
+
 cp "$LOG" examples/run_log.txt
 cp out/outbox.jsonl examples/outbox.jsonl
 cp out/report.md examples/report.md

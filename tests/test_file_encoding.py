@@ -6,9 +6,13 @@ character in report.html.j2 (not cp1252)."""
 from __future__ import annotations
 
 import ast
+import os
+import subprocess
+import sys
 from pathlib import Path
 
-HUNTER_DIR = Path(__file__).resolve().parent.parent / "hunter"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+HUNTER_DIR = REPO_ROOT / "hunter"
 TEXT_IO_CALLS = {"open", "read_text", "write_text"}
 
 
@@ -47,3 +51,30 @@ def test_every_text_file_io_call_pins_utf8_encoding():
                 offenders.append(f"{path.relative_to(HUNTER_DIR.parent)}:{node.lineno} {name}(...)")
 
     assert not offenders, "Missing encoding=\"utf-8\" on:\n" + "\n".join(offenders)
+
+
+def test_hunter_run_does_not_crash_when_stdout_is_cp1252():
+    """On Windows, redirecting stdout (a pipe, a file, an IDE output panel) makes
+    Python fall back to the console code page (cp1252) unless PYTHONUTF8 forces
+    UTF-8 - which then crashes on the box-drawing characters in every dry-run
+    console block (run/edit/approve/simulate), never on a real stack trace.
+    PYTHONIOENCODING is honored cross-platform, so this reproduces the exact
+    failure mode on any OS, not just Windows - `hunter/cli.py`'s top-level
+    stdout/stderr .reconfigure(encoding="utf-8") is what prevents it.
+    """
+    env = os.environ.copy()
+    env.pop("PYTHONUTF8", None)
+    env.pop("ANTHROPIC_API_KEY", None)
+    env["PYTHONIOENCODING"] = "cp1252"
+
+    def run(*args: str) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            [sys.executable, "-m", "hunter", *args],
+            cwd=REPO_ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, encoding="utf-8", errors="replace",
+        )
+
+    assert run("reset").returncode == 0
+    result = run("run")
+    assert result.returncode == 0, result.stdout
+    assert "Traceback" not in result.stdout

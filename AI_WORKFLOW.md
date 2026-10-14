@@ -37,6 +37,7 @@ This file is long - load the section you need rather than the whole file. The Hi
 | 25 | 10-12 | Pre-submit cleanup: stale n8n doc claims, a real sent_at bug |
 | 26 | 10-12 | Steps 1-5: externally-fixed diagrams, PRD sync, branded report.html |
 | 27 | 10-12 | Report polish: Title/LinkedIn, score legend, route labels, sequence timeline, README assumptions |
+| 28 | 10-14 | Windows reality check: cp1252 stdout crash found and fixed |
 
 ## Highlights: where human review caught what the automated checks missed
 
@@ -617,3 +618,22 @@ While staging the Phase 0 scaffold commit, `git status` showed `.env.example` (t
 **Result:** `pytest -q`: 160/160. `hunter eval`: 100%. `examples/report.html` (final state) and the new `examples/report_after_run.html` (mid-run, real countdown) both regenerated and HTML-validated (tag-balanced, no unrendered Jinja).
 
 **Decisions made by the human:** confidence ratings and "if wrong" impact in the README's assumptions table are Claude's own judgment calls, not independently verified against anything - flagged as such in the table's own framing ("These are the commercial assumptions I'd confirm with the hiring team").
+
+---
+
+## Entry #28 — 2026-10-14 — Windows reality check: cp1252 stdout crash found and fixed
+
+**Note on a gap in this log:** the two commits right before this one ("Report: fix HITL label, mobile tables, summary marker" and "Windows: utf-8 I/O, multi-id approve, PowerShell quickstart") never got their own entries here, and neither did a separate commit made directly on a Windows machine between them ("Windows-safe tests, reviewer-first README, PRD history cleanup" - test DB paths moved to `tempfile.gettempdir()`, a clickable `file://` link added to `report --html`, README restructured with a TL;DR and a report screenshot, PRD trimmed of build-history asides). All real, all on `main` - just not logged at the time. Flagging rather than quietly backfilling three retroactive entries.
+
+**Prompt (summarized):** after a pre-submit review across two machines (this session reporting PASS on macOS; a second Claude Code session actually running the README's Windows PowerShell block, interactively, on real Windows 11 + PowerShell 5.1), the Windows session found one real bug: `hunter run`/`edit`/`approve`/`simulate` crash with `UnicodeEncodeError: 'charmap' codec can't encode characters` the moment stdout is redirected (a pipe, `> file`, an IDE panel) - Windows then uses the console code page (cp1252), not UTF-8, for the box-drawing characters in `dispatch.py`'s console block. It passes interactively and with `PYTHONUTF8=1`, which is why every earlier test (including this session's own `test_file_encoding.py`) missed it - none of them actually redirected stdout under the real Windows default. Fix: reconfigure `sys.stdout`/`sys.stderr` to UTF-8 at the top of `cli.py`, add a regression test, strip the resulting `file://` line's machine-specific path out of the committed `run_log.txt`, verify, push.
+
+**What Claude did:**
+- Confirmed `python -m hunter` (`hunter/__main__.py` → `hunter/cli.py`) is genuinely the only entry point - no `pyproject.toml`/`setup.py`/`setup.cfg` exist, so there's no `console_scripts` wrapper this could hide behind.
+- Added the `sys.stdout`/`sys.stderr` `.reconfigure(encoding="utf-8", errors="replace")` loop at the top of `cli.py`, before `load_dotenv()` - module-level, so it runs on import regardless of which command executes. Didn't touch `dispatch.py`'s box-drawing output or any pipeline logic, as instructed.
+- Reproduced the exact bug cross-platform (on macOS) via `PYTHONIOENCODING=cp1252` with `PYTHONUTF8` unset - Python honors `PYTHONIOENCODING` on every OS, so this is the same failure mode, not a simulation of it. Added `test_hunter_run_does_not_crash_when_stdout_is_cp1252` (subprocess, `stdout=PIPE`) to `tests/test_file_encoding.py`. Verified the test actually catches the regression before trusting it: stashed the fix (removed the `reconfigure` block via `Edit`, confirmed via `Read` that only that block was gone, nothing else) - the test failed with the identical `UnicodeEncodeError: 'charmap' codec can't encode characters` the Windows session reported, byte for byte. Restored the fix, re-ran, passed.
+- `scripts/regenerate_examples.sh`: the new `Open in browser: file://...` line (from the Windows session's own earlier commit) bakes in whoever's local absolute path - not reproducible on a different checkout. Added one `sed -i.bak -E 's#Open in browser: file://.*#Open in browser: out/report.html#'` line (the `-i.bak` form, not bare `-i`, is the one in-place syntax both BSD sed on macOS and GNU sed on Linux accept identically) before the log gets copied into `examples/`.
+- Ran the script for real: `git diff examples/` showed exactly what was asked - only `run_log.txt` (+1 line, the portable version), plus the usual timestamp noise in `hunter.db`/`outbox.jsonl`. `grep -rnE "/Users/|C:\\\\Users|/home/" examples/` returned nothing.
+
+**Result:** `pytest -q`: 163/163. `hunter eval`: PASS. Stash-then-restore check: FAIL without the fix (confirmed, exact error match), PASS with it (confirmed).
+
+**Decisions made by the human:** none required - a direct bug report with a prescribed fix, verified rather than assumed at every step (entry point, reproduction, stash/restore, final diff).

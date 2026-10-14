@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -16,6 +17,18 @@ from hunter import personalize as personalize_mod
 from hunter import report as report_mod
 from hunter.llm import ReplayMissError
 from hunter.models import load_config
+
+# python -m hunter (hunter/__main__.py -> this module) is the only entry point -
+# no pyproject.toml/setup.py, so there's no console_scripts wrapper to do this
+# instead. On Windows, redirecting stdout (a pipe, a file, an IDE output panel)
+# makes Python fall back to the console code page (cp1252) instead of UTF-8,
+# which crashes on the box-drawing characters in every dry-run console block
+# (run, edit, approve, simulate) - never on a real stack trace, but PRD §11.2
+# still calls for the clean error message, not a crash. Never masks the box
+# characters themselves, only how they're encoded on the way out.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
 
 load_dotenv()
 
