@@ -65,8 +65,10 @@ def full_funnel_conn(config, tmp_path):
 
 @pytest.fixture
 def post_run_conn(config, tmp_path):
-    """Right after `hunter run`, before any approval: invites drafted and
-    routed (2 auto, 3 human), nothing approved or dispatched yet."""
+    """Right after `hunter run`: invites drafted, routed (2 auto, 3 human),
+    and dispatched (the real CLI's `run` command dispatches at the end too -
+    2 auto-approved invites are SENT; the 3 human-routed ones stay
+    PENDING_APPROVAL, untouched by dispatch since nothing approved them)."""
     test_config = config.model_copy(deep=True)
     test_config.runtime.outbox_path = str(tmp_path / "outbox.jsonl")
 
@@ -88,6 +90,7 @@ def post_run_conn(config, tmp_path):
     scoring.score_accounts(conn, test_config, test_config.as_of)
     scoring.select_leads(conn, test_config, datetime.now())
     personalize_mod.draft_invites_for_qualified_leads(conn, test_config, llm_mode="replay", run_id=None, now=datetime.now())
+    dispatch.dispatch_approved(conn, test_config, run_id=None, now=datetime.now())
 
     yield conn, test_config
     conn.close()
@@ -241,4 +244,28 @@ def test_sequence_timeline_dates_come_from_as_of_not_wall_clock(full_funnel_conn
             assert row["due_date"] == test_config.as_of + timedelta(days=r3_days)
         else:
             assert row["due_date"] == row["accepted"]
-        assert row["days_remaining"] == 0  # full_funnel_conn runs the demo to completion
+        # full_funnel_conn runs the demo to completion - every row has a fired
+        # action ("Day N"), never the "days left" countdown text.
+        assert row["day_label"] == f"Day {r3_days if row['accepted'] is None else (row['accepted'] - test_config.as_of).days}"
+
+
+def test_sequence_timeline_day_label_names_the_actual_day(full_funnel_conn, post_run_conn):
+    """The 'Days remaining' column used to show 0 for every row once the demo
+    completes (misread as a bug) - it now names which simulated day the
+    action fired or is due on instead."""
+    conn, test_config = full_funnel_conn
+    by_name = {
+        f"{row['lead']['first_name']} {row['lead']['last_name']}": row["day_label"]
+        for row in report.build_sequence_timeline(conn, test_config)
+    }
+    assert by_name["Maya Rosen"] == "Day 2"  # accepted day 2 -> warm email
+    assert by_name["Lior Ben-David"] == "Day 4"  # accepted day 4 -> warm email
+    for cold_lead in ("Tom Hale", "Joris de Vries", "Dana Weiss"):
+        assert by_name[cold_lead] == "Day 7"  # never accepted -> cold email at R3
+
+    post_conn, post_config = post_run_conn
+    r3_days = next(r.days for r in post_config.sequence if r.id == "R3")
+    mid_run_rows = report.build_sequence_timeline(post_conn, post_config)
+    assert mid_run_rows  # at least the 2 auto-sent invites are "contacted" already
+    for row in mid_run_rows:
+        assert row["day_label"] == f"Cold email on Day {r3_days} ({r3_days} days left)"

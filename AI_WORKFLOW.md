@@ -39,6 +39,7 @@ This file is long - load the section you need rather than the whole file. The Hi
 | 27 | 10-12 | Report polish: Title/LinkedIn, score legend, route labels, sequence timeline, README assumptions |
 | 28 | 10-14 | Windows reality check: cp1252 stdout crash found and fixed |
 | 29 | 10-14 | Isolated the new subprocess test from the reviewer's real hunter.db/out/ |
+| 30 | 10-14 | Sequence timeline: "Day N" instead of an all-zero "Days remaining" |
 
 ## Highlights: where human review caught what the automated checks missed
 
@@ -652,3 +653,18 @@ While staging the Phase 0 scaffold commit, `git status` showed `.env.example` (t
 **Result:** `pytest -q`: 163/163. `hunter eval`: PASS. Hash comparison: identical before/after (confirmed, not assumed).
 
 **Decisions made by the human:** none required - a direct, well-diagnosed bug report with a prescribed fix shape.
+
+---
+
+## Entry #30 — 2026-10-14 — Sequence timeline: "Day N" instead of an all-zero "Days remaining"
+
+**Prompt (summarized):** the Sequence timeline's "Days remaining" column shows 0 for every row once the demo completes - reads like a bug, hides the useful info. Replace it with "Day": the simulated day the action fired or is due, relative to the invite (day 0) - computed from config and the clock, not hard-coded. `report.py` and both renderers only, no pipeline/trigger changes.
+
+**What Claude did:**
+- Renamed `build_sequence_timeline`'s `days_remaining: int` field to `day_label: str`: `"Day {due_day}"` once a warm/cold message exists (sent or still awaiting approval - the existing `status_label` column already carries that distinction), `"Cold email on Day {r3_days} ({r3_days} days left)"` while nothing's been drafted yet - `r3_days` read from `config.sequence` each time, same as before.
+- Fixing the existing `test_sequence_timeline_dates_come_from_as_of_not_wall_clock` surfaced a real, separate gap: the `post_run_conn` fixture (added in an earlier round, for a routed-vs-approved HITL test) drafted invites but never dispatched them - unlike the real `hunter run` CLI command, which dispatches at the end too. The new test needed at least the 2 auto-approved invites to be SENT in that fixture (matching `examples/report_after_run.html`'s actual mid-run state), and they weren't. Added the missing `dispatch.dispatch_approved` call to the fixture - checked first that this can't affect the HITL test that already uses it: dispatch only touches already-APPROVED messages, never the human-routed PENDING_APPROVAL ones, so `by_route["human"]` and `human_approved` stay exactly as that test expects.
+- Added the specific test asked for: after the full demo, Maya = Day 2, Lior = Day 4, Tom/Joris/Dana = Day 7; in the mid-run snapshot, every contacted lead reads "Cold email on Day 7 (7 days left)".
+
+**Result:** `pytest -q`: 164/164. `hunter eval`: 100%. `git diff examples/` after regenerating: only the Sequence timeline table in `report.md`/`report.html`/`report_after_run.html`, plus the usual timestamp noise - confirmed by reading the diff, not assumed.
+
+**Decisions made by the human:** none required - a direct cosmetic fix with a precisely specified shape.

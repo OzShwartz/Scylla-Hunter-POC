@@ -299,7 +299,7 @@
 <section class="card-shell">
   <h2>Sequence timeline</h2>
   <table>
-    <tr><th>Lead</th><th>Invite sent</th><th>Accepted</th><th>Next action</th><th>Due</th><th>Days remaining</th><th>Status</th></tr>
+    <tr><th>Lead</th><th>Invite sent</th><th>Accepted</th><th>Next action</th><th>Due</th><th>Day</th><th>Status</th></tr>
     {% for row in data.sequence_timeline %}
     {% set lead = row.lead %}
     <tr>
@@ -308,7 +308,7 @@
       <td>{{ row.accepted if row.accepted else "-" }}</td>
       <td>{{ row.next_action }}</td>
       <td>{{ row.due_date }}</td>
-      <td>{{ row.days_remaining }}</td>
+      <td>{{ row.day_label }}</td>
       <td>{{ row.status_label }}</td>
     </tr>
     {% endfor %}

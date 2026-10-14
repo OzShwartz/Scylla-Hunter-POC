@@ -329,18 +329,22 @@ def build_sequence_timeline(conn: sqlite3.Connection, config: Config) -> list[di
             sent = warm["status"] == "SENT"
             next_action = "Done (warm email)" if sent else "Warm email (awaiting approval)"
             status_label = f"Sent on {config.as_of + timedelta(days=due_day)}" if sent else "Pending approval"
-            days_remaining = 0
+            day_label = f"Day {due_day}"
         elif cold is not None:
             due_day = r3_days
             sent = cold["status"] == "SENT"
             next_action = "Done (cold email)" if sent else "Cold email (awaiting approval)"
             status_label = f"Sent on {config.as_of + timedelta(days=due_day)}" if sent else "Pending approval"
-            days_remaining = 0
+            day_label = f"Day {due_day}"
         else:
+            # Nothing simulated for this lead yet - the reference day is 0, so
+            # the full window to R3 is still ahead of it (PRD §12: R3 fires at
+            # config.sequence's "R3" rule, read above, never hard-coded here).
             due_day = r3_days
+            days_left = r3_days
             next_action = f"Cold email due at day {r3_days}"
             status_label = "Pending"
-            days_remaining = r3_days
+            day_label = f"Cold email on Day {r3_days} ({days_left} days left)"
 
         rows.append(
             {
@@ -349,7 +353,7 @@ def build_sequence_timeline(conn: sqlite3.Connection, config: Config) -> list[di
                 "accepted": (config.as_of + timedelta(days=accepted_day)) if accepted_day is not None else None,
                 "next_action": next_action,
                 "due_date": config.as_of + timedelta(days=due_day),
-                "days_remaining": days_remaining,
+                "day_label": day_label,
                 "status_label": status_label,
             }
         )
@@ -450,7 +454,7 @@ def render_markdown(data: ReportData) -> str:
     if data.sequence_timeline:
         lines += [
             "## Sequence timeline", "",
-            "| Lead | Invite sent | Accepted | Next action | Due | Days remaining | Status |",
+            "| Lead | Invite sent | Accepted | Next action | Due | Day | Status |",
             "|---|---|---|---|---|---|---|",
         ]
         for row in data.sequence_timeline:
@@ -458,7 +462,7 @@ def render_markdown(data: ReportData) -> str:
             accepted = row["accepted"].isoformat() if row["accepted"] else "-"
             lines.append(
                 f"| {lead['first_name']} {lead['last_name']} | {row['invite_sent'].isoformat()} | {accepted} | "
-                f"{row['next_action']} | {row['due_date'].isoformat()} | {row['days_remaining']} | {row['status_label']} |"
+                f"{row['next_action']} | {row['due_date'].isoformat()} | {row['day_label']} | {row['status_label']} |"
             )
         lines.append("")
 

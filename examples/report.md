@@ -145,13 +145,13 @@
 
 ## Sequence timeline
 
-| Lead | Invite sent | Accepted | Next action | Due | Days remaining | Status |
+| Lead | Invite sent | Accepted | Next action | Due | Day | Status |
 |---|---|---|---|---|---|---|
-| Maya Rosen | 2026-10-08 | 2026-10-10 | Done (warm email) | 2026-10-10 | 0 | Sent on 2026-10-10 |
-| Tom Hale | 2026-10-08 | - | Done (cold email) | 2026-10-15 | 0 | Sent on 2026-10-15 |
-| Joris de Vries | 2026-10-08 | - | Done (cold email) | 2026-10-15 | 0 | Sent on 2026-10-15 |
-| Lior Ben-David | 2026-10-08 | 2026-10-12 | Done (warm email) | 2026-10-12 | 0 | Sent on 2026-10-12 |
-| Dana Weiss | 2026-10-08 | - | Done (cold email) | 2026-10-15 | 0 | Sent on 2026-10-15 |
+| Maya Rosen | 2026-10-08 | 2026-10-10 | Done (warm email) | 2026-10-10 | Day 2 | Sent on 2026-10-10 |
+| Tom Hale | 2026-10-08 | - | Done (cold email) | 2026-10-15 | Day 7 | Sent on 2026-10-15 |
+| Joris de Vries | 2026-10-08 | - | Done (cold email) | 2026-10-15 | Day 7 | Sent on 2026-10-15 |
+| Lior Ben-David | 2026-10-08 | 2026-10-12 | Done (warm email) | 2026-10-12 | Day 4 | Sent on 2026-10-12 |
+| Dana Weiss | 2026-10-08 | - | Done (cold email) | 2026-10-15 | Day 7 | Sent on 2026-10-15 |
 
 ## Run metadata
 
